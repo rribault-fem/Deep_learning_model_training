@@ -1,5 +1,6 @@
 outs:
-- md5: fcb3b56912fb8e017d87c78a8cf3be6d.dir
+- md5: 1c2d80af042ae7034b97f48d0b4ba948.dir
   size: 912805426
   nfiles: 409
   path: train_surrogate
+  hash: md5

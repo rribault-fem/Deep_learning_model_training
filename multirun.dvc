@@ -1,5 +1,6 @@
 outs:
-- md5: 43272a3ebdfb8fbf49cd5d522517b639.dir
+- md5: b1006cb7cc1042c1cd4758775331eadf.dir
   size: 3418886384
   nfiles: 301
   path: multirun
+  hash: md5
