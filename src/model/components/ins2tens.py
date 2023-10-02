@@ -51,7 +51,7 @@ class ins2tens(nn.Module):
         self.conv5 = nn.Conv1d(17992, 128, kernel_size=1)
         self.conv6 = nn.Conv1d(128, 64, kernel_size=1)
         self.conv7 = nn.Conv1d(64, 32, kernel_size=1)
-        self.dense1 = nn.Linear(32, 7)
+        self.dense1 = nn.Linear(32, 4)
         # self.dense1 = nn.Linear(2250, 1000)
         # self.conv2 = nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1)
         # self.conv3 = nn.Conv2d(32, 16, kernel_size=3, stride=1, padding=1)
@@ -99,7 +99,7 @@ class ins2tens(nn.Module):
         #         conv1D_layer = nn.Conv1d(conv1D_in_channel[i], self.two_dims_channel_nb, kernel_size=kernel_size, stride=stride)
         #     setattr(self, f"Conv1D{i+1}", conv1D_layer)
 
-        summary(self, input_size=(6, 36000))     
+        summary(self, input_size=(32, 36000, 6))     
 
     def forward(self, x):
         """
@@ -114,17 +114,18 @@ class ins2tens(nn.Module):
 
 
         # reshape the input tensor in chuncks on the second dimension
-        
+        x= x.permute(0, 2, 1)
         x = self.activation(self.conv1(x))
         x = self.activation(self.conv2(x))
         x = self.activation(self.conv3(x))
         x = self.activation(self.conv4(x))
-        x = x.view(17992, 1)
+        x = x.permute(0, 2, 1)
         x = self.activation(self.conv5(x))
         x = self.activation(self.conv6(x))
         x = self.activation(self.conv7(x))
-        x = x.view(1, 32)
+        x = x.permute(0, 2, 1)
         x = self.activation(self.dense1(x))
+        x = x.flatten
         # x = self.activation(self.dense1(x))
         # x = x.view(16*32, 6)
         
