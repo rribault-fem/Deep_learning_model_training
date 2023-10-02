@@ -1,0 +1,13 @@
+input_variables:
+  - x
+  - y
+  - z
+  - roll
+  - pitch
+  - yaw
+
+output_variables:
+  - Sensor_mean
+  - Sensor_std
+  - Sensor_max
+  - Sensor_min

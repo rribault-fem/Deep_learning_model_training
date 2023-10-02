@@ -1,0 +1,6 @@
+_target_ : model.components.conv1d_surr_nopca_ins2tens.conv1d_surr_nopca_ins2tens
+activation : 
+  _target_ : torch.nn.ReLU
+first_dense_layer_out_features: 64
+latent_space_dim : 16
+dropout_rate : 0.35

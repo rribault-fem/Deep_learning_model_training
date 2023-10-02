@@ -57,9 +57,9 @@ class Split_transform :
             df_training_set, df_test_set = getattr(self, self.split_method)(df)
         else : raise ValueError(f"No such method in {__name__}: {self.split_method}")
 
-        # Save the training set environment inside experiment folder
-        self.save_training_environment(df_training_set, X_channel_list, df_train_set_envir_filename)
-        log.info('data splitted, now transform to np.array')
+        # # Save the training set environment inside experiment folder
+        # self.save_training_environment(df_training_set, X_channel_list, df_train_set_envir_filename)
+        # log.info('data splitted, now transform to np.array')
 
         # Transform the data to numpy array
         X_train, X_test, Y_train, Y_test = self.transform_train_test_xr_dataset_to_numpy(df_training_set, df_test_set,  X_channel_list = X_channel_list, Y_channel_list = Y_channel_list)
@@ -102,26 +102,25 @@ class Split_transform :
         #     # y_test_anomaly_set = df['anomaly_catalogue_nb'].sel(time=df_test_set.time.values)
         #     # Y_channel_list.drop('anomaly')
 
-        #Prepare Y
         
         log =  logging.getLogger(os.environ['logger_name'])
-        Y_numpy_channels_training_set = self.get_numpy_input_channel_set(df_training_set, Y_channel_list)
-        log.info('# selected input channels are : {}'.format(str(Y_channel_list)))
-        log.info('# channel training set numpy transformation success. Shape of channel training is {} '.format(str(np.shape(Y_numpy_channels_training_set))))
-        Y_numpy_channels_test_set = self.get_numpy_input_channel_set(df_test_set, Y_channel_list)
-        log.info('# channel test set numpy transformation success. Shape of channel test is {}'.format(np.shape(Y_numpy_channels_test_set)))
+        X_numpy_channels_training_set = self.get_numpy_input_2D_set(df_training_set, X_channel_list)
+        log.info('# selected input channels are : {}'.format(str(X_channel_list)))
+        log.info('# channel training set numpy transformation success. Shape of channel training is {} '.format(str(np.shape(X_numpy_channels_training_set))))
+        X_numpy_channels_test_set = self.get_numpy_input_2D_set(df_test_set, X_channel_list)
+        log.info('# channel test set numpy transformation success. Shape of channel test is {}'.format(np.shape(X_numpy_channels_test_set)))
 
         # Cut off frequency to not try to predict noise
         cut_low_freq_arg = np.argwhere(df_training_set.Frequency_psd.values>(self.cut_low_frequency))[0][0]
         #cut_high_freq = np.argwhere(df.Frequency_psd.values<4)[0][0]
         
        
-        Y_numpy_channels_training_set = Y_numpy_channels_training_set[:,cut_low_freq_arg:,:]
-        Y_numpy_channels_test_set = Y_numpy_channels_test_set[:, cut_low_freq_arg :  ,:]
+        X_numpy_channels_training_set = X_numpy_channels_training_set #[:, cut_low_freq_arg :  ,:] for frequency
+        X_numpy_channels_test_set = X_numpy_channels_test_set #[:, cut_low_freq_arg :  ,:] for frequency
 
 
-        X_numpy_channels_training_set = self.get_numpy_input_envir_set(df_training_set, X_channel_list)
-        X_numpy_channels_test_set = self.get_numpy_input_envir_set(df_test_set, X_channel_list)
+        Y_numpy_channels_training_set = self.get_numpy_input_1D_set(df_training_set, Y_channel_list)
+        Y_numpy_channels_test_set = self.get_numpy_input_1D_set(df_test_set, Y_channel_list)
     
         return X_numpy_channels_training_set, X_numpy_channels_test_set, Y_numpy_channels_training_set, Y_numpy_channels_test_set
     
@@ -231,7 +230,26 @@ class Split_transform :
         
         return df_valid
     
-    def get_numpy_input_envir_set(self, df, envir_variables) :
+    def find_test_set_in_future(self, df: xr.Dataset) -> Tuple[xr.Dataset, xr.Dataset]:
+        """
+        This method finds a test set by selecting a random sample of the data.
+
+        Args:
+            df (xr.Dataset): An xarray Dataset containing the data to be split.
+
+        Returns:
+            tuple: A tuple containing two elements: df_training_set, df_test_set.
+        """
+        log =  logging.getLogger(os.environ['logger_name'])
+        log.info('#####')
+        log.info('split test and train sets ')
+        log.info('#####')
+        df_training_set = df.isel(time=slice(0, -self.test_nb))
+        df_test_set = df.isel(time=slice(-self.test_nb, None))
+        return df_training_set, df_test_set
+
+    
+    def get_numpy_input_1D_set(self, df, envir_variables) :
         # loading channels data in numpy for CNN 
         log = logging.getLogger(os.environ['logger_name'])
         input_envir_set = np.empty_like(np.expand_dims(df[envir_variables[0]].values, axis = 1))
@@ -242,7 +260,7 @@ class Split_transform :
         log.info('# input_envir_set shape is {}'.format(str(np.shape(input_envir_set))))
         return input_envir_set
 
-    def get_numpy_input_channel_set(self, df, channels) :
+    def get_numpy_input_2D_set(self, df, channels) :
         # loading channels data in numpy for CNN 
 
         input_channel_set = np.empty_like(np.expand_dims(df[channels[0]].values, axis = 2))

@@ -1,0 +1,23 @@
+# path to root directory
+# this requires PROJECT_ROOT environment variable to exist
+# you can replace it with "." if you want the root to be the current working directory
+root_dir: ${oc.env:PROJECT_ROOT}
+
+# path to data directory
+data_dir: ${paths.root_dir}/data/
+
+# path to logging directory
+log_dir: ${paths.root_dir}/outputs/
+
+# path to output directory, created dynamically by hydra
+# path generation pattern is specified in `configs/hydra/default.yaml`
+# use it to store all files generated during the run, like ckpts and metrics
+output_dir: ${hydra:runtime.output_dir}
+
+# path to working directory
+work_dir: ${hydra:runtime.cwd}
+
+dataset: ${paths.data_dir}/netcdf_databases/DB_INS_to_tension_Monabiop_clean_sensors.nc
+
+# To save the model training environment dataset along with the model in the output folder
+training_env_dataset: ${paths.output_dir}/envir_training_db_ins2tension_monabiop.nc
