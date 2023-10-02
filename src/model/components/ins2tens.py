@@ -125,7 +125,7 @@ class ins2tens(nn.Module):
         x = self.activation(self.conv7(x))
         x = x.permute(0, 2, 1)
         x = self.activation(self.dense1(x))
-        x = x.flatten
+        x = x.flatten(start_dim=1)
         # x = self.activation(self.dense1(x))
         # x = x.view(16*32, 6)
         
