@@ -35,7 +35,7 @@ class Envir_scaler :
         x_numpy_channels_training_set = self.scaler.fit_transform(X_numpy_channels_training_set)
         x_numpy_channels_val_set = self.scaler.transform(X_numpy_channels_test_set)
         
-        log.info('X  data scaled')
+        log.info('1D data scaled')
         log.info('###')
 
         return x_numpy_channels_training_set, x_numpy_channels_val_set

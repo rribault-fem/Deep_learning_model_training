@@ -3,7 +3,7 @@ import numpy as np
 from torchinfo import summary
 import math
 
-class conv1d_surr_nopca_ins2tens(nn.Module):
+class ins2tens(nn.Module):
     """
     A PyTorch Lightning module representing a 1D convolutional neural network
     for regression from ins time series to statistics of tension sensor.
@@ -43,15 +43,24 @@ class conv1d_surr_nopca_ins2tens(nn.Module):
         # Architecture of the neural network
 
         # Several conv1D layers are used to condense the input data per channels to a lattent space
-        self.conv1 = nn.Conv2d(1125, 64, kernel_size=3, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1)
-        self.conv3 = nn.Conv2d(32, 16, kernel_size=3, stride=1, padding=1)
-        self.maxpool = nn.MaxPool1d(kernel_size=2, stride=2)
-        self.minpool = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv1 = nn.Conv1d(6, 3, kernel_size=5, stride=1)
+        self.conv2 = nn.Conv1d(3, 2, kernel_size=5, stride=1)
+        self.conv3 = nn.Conv1d(2, 1, kernel_size=5, stride=1)
+        self.conv4 = nn.Conv1d(1, 1, kernel_size=5, stride=2)
+        
+        self.conv5 = nn.Conv1d(17992, 128, kernel_size=1)
+        self.conv6 = nn.Conv1d(128, 64, kernel_size=1)
+        self.conv7 = nn.Conv1d(64, 32, kernel_size=1)
+        self.dense1 = nn.Linear(32, 7)
+        # self.dense1 = nn.Linear(2250, 1000)
+        # self.conv2 = nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1)
+        # self.conv3 = nn.Conv2d(32, 16, kernel_size=3, stride=1, padding=1)
+        # self.maxpool = nn.MaxPool1d(kernel_size=2, stride=2)
+        # self.minpool = nn.MaxPool1d(kernel_size=2, stride=2)
 
-        self.dense1 = nn.Linear(16*32, 6)
-        self.dense2 = nn.Linear(64, 32)
-        self.dense3 = nn.Linear(32, self.y_output_size)
+        # self.dense1 = nn.Linear(16*32, 6)
+        # self.dense2 = nn.Linear(64, 32)
+        # self.dense3 = nn.Linear(32, self.y_output_size)
 
         # The lattent space is transformed to a 1D tensor shape using a dense layer
 
@@ -90,9 +99,7 @@ class conv1d_surr_nopca_ins2tens(nn.Module):
         #         conv1D_layer = nn.Conv1d(conv1D_in_channel[i], self.two_dims_channel_nb, kernel_size=kernel_size, stride=stride)
         #     setattr(self, f"Conv1D{i+1}", conv1D_layer)
 
-
-
-        summary(self, input_size=(6,36000), gpu=True)     
+        summary(self, input_size=(6, 36000))     
 
     def forward(self, x):
         """
@@ -107,13 +114,21 @@ class conv1d_surr_nopca_ins2tens(nn.Module):
 
 
         # reshape the input tensor in chuncks on the second dimension
-        x = x.view((1125, 32 , self.two_dims_channel_nb))
-
-        # use a conv2D each chunck to reduce dimensionality
+        
         x = self.activation(self.conv1(x))
         x = self.activation(self.conv2(x))
         x = self.activation(self.conv3(x))
-        x = x.view(16*32, 6)
+        x = self.activation(self.conv4(x))
+        x = x.view(17992, 1)
+        x = self.activation(self.conv5(x))
+        x = self.activation(self.conv6(x))
+        x = self.activation(self.conv7(x))
+        x = x.view(1, 32)
+        x = self.activation(self.dense1(x))
+        # x = self.activation(self.dense1(x))
+        # x = x.view(16*32, 6)
+        
+        
         return x
     
 if __name__ == '__main__':
@@ -123,6 +138,6 @@ if __name__ == '__main__':
         "two_dims_decomp_length" : 36000,
         "two_dims_channel_nb" : 6}
 
-    model = conv1d_surr_nopca_ins2tens( 
+    model = ins2tens( 
     latent_space_dim =2**6,
     **kwargs)

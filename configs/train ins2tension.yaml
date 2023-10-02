@@ -6,10 +6,10 @@ _target_: Preprocessing.Preprocessing
 
 defaults:
   - _self_
-  - preprocessing: default.yaml
+  - preprocessing: ins2tension.yaml
   - paths: ins2tension_monabiop.yaml
   - model : surrogate_module.yaml
-  - model_net : conv1d_surr.yaml
+  - model_net : ins2tens.yaml
   - trainer: cpu.yaml
   - callbacks : default.yaml
   - logger: many_loggers.yaml

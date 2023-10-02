@@ -17,7 +17,7 @@ import os
 import math
 
 # version_base=1.1 is used to make hydra change the current working directory to the hydra output path
-@hydra.main(config_path="../configs", config_name="train.yaml", version_base="1.3")
+@hydra.main(config_path="../configs", config_name="train ins2tension.yaml", version_base="1.3")
 def main(cfg :  DictConfig):
         """
         This function serves as the main entry point for the script.
@@ -142,17 +142,17 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         df = df.dropna(dim='time', how='any')
 
         preprocess.unit_dictionnary = {}
-        for var in preprocess.inputs_outputs.envir_variables :
+        for var in preprocess.inputs_outputs.input_variables :
                 preprocess.unit_dictionnary[var] = df[var].attrs['unit']
-        for var in preprocess.inputs_outputs.neuron_variables :
-                preprocess.unit_dictionnary[var] = df[var].attrs['unit']
+        for var in preprocess.inputs_outputs.output_variables :
+                preprocess.unit_dictionnary[var] = 'kN'
         
         ####
         # Split data into train and test sets. 
         ####
         X_train, X_test, Y_train, Y_test = preprocess.split_transform.process_data(df=df, 
                                                                         X_channel_list=preprocess.inputs_outputs.input_variables,
-                                                                        Y_channel_list=preprocess.inputs_outputs.outputs_variables,
+                                                                        Y_channel_list=preprocess.inputs_outputs.output_variables,
                                                                         df_train_set_envir_filename=cfg.paths.training_env_dataset)
         ####
         # Scale 1D output data with scaler defined in hydra config file

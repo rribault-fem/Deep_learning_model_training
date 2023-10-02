@@ -27,7 +27,7 @@ class Y_spectrum_scaler :
         """
         
         log =  logging.getLogger(os.environ['logger_name'])
-        log.info('scale the y spectrum data')
+        log.info('scale the 2D data')
         
         # Prepare empty output arrays
         n_samples_train = np.shape(Y_numpy_channels_training_set)[0]

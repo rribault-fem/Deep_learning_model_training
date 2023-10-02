@@ -4,7 +4,7 @@ _target_ : Preprocessing.Preprocessing
 
 defaults :
  - _self_
- - inputs_outputs : ins2tension.yaml
+ - inputs_outputs : Monabiop_ins_tension.yaml
 
 
 feature_eng : 

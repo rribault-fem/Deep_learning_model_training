@@ -257,7 +257,7 @@ class Split_transform :
             input_envir = np.expand_dims(df[env_var].values, axis = 1)
             input_envir_set = np.append(input_envir_set, input_envir, axis = 1)
         input_envir_set = np.delete(input_envir_set, 0, axis=1)
-        log.info('# input_envir_set shape is {}'.format(str(np.shape(input_envir_set))))
+        log.info('# input_set shape is {}'.format(str(np.shape(input_envir_set))))
         return input_envir_set
 
     def get_numpy_input_2D_set(self, df, channels) :
