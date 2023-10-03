@@ -71,6 +71,8 @@ def main(cfg :  DictConfig):
                 "two_dims_decomp_length" : two_dims_decomp_length,
                 "two_dims_channel_nb" : two_dims_channel_nb}
         
+        # save kwargs to hydra config
+        
         log.info(f"Importing model net {cfg.model_net._target_}")
         # can be passed as *args because all arguments are defined above, no argument defined in .yaml config file.
         model_net : torch.nn.Module = hydra.utils.instantiate(cfg.model_net, **kwargs)
