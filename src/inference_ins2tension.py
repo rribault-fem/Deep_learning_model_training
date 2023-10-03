@@ -97,6 +97,14 @@ def inference(cfg : DictConfig):
     Yscaler = preprocess.envir_scaler.scaler
     Y_hat = Yscaler.inverse_transform(y_hat)
 
+    variables = preprocess.inputs_outputs.output_variables
+
+    for var in variables :
+        array = prepare_new_array(Y_hat[:, variables.index(var)], var.replace('Sensor', 'NNet'))
+        infer_dataset[var] = array
+
+    infer_dataset
+
     # if preprocess.perform_decomp :
     #     PCAs = preprocess.decomp_y_spectrum.decomps
 
@@ -221,6 +229,20 @@ def main(cfg: DictConfig) -> None:
 
     inference(cfg)
 
+
+def prepare_new_array(NN_var : np.array, vars : str) -> xr.DataArray:
+
+    array =  xr.DataArray.from_dict(
+        {
+            "attrs" : {
+                "description" : f" Inference of the {vars} using a neural network",
+                "source" : "Neural network"},
+            "dims" : "time",
+            "data"  : NN_var,
+            "name" : "NN_Sensor_mean"
+        })
+     
+    return array
 
 if __name__ == "__main__":
     load_env_file(f"env.yaml")
