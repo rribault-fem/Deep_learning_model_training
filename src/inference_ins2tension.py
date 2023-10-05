@@ -74,7 +74,7 @@ def inference(cfg : DictConfig):
     # Use preprocessing pipeline to prepare test data for inference
     df= infer_dataset
     X_infer = preprocess.split_transform.get_numpy_input_2D_set(df, X_channel_list)
-    x_infer = preprocess.y_spectrum_scaler.scale_data_infer(X_infer)
+    x_infer = preprocess.output_scaler.scale_data_infer(X_infer)
 
     # predict nominal spectrum thanks to the surrogate model
     def model_predict(x_infer: np.array, model :SurrogateModule ) -> np.ndarray :
@@ -94,7 +94,7 @@ def inference(cfg : DictConfig):
     y_hat = model_predict(x_infer, model)
 
     # unscale y_hat
-    Yscaler = preprocess.envir_scaler.scaler
+    Yscaler = preprocess.input_scaler.scaler
     Y_hat = Yscaler.inverse_transform(y_hat)
 
     variables = preprocess.inputs_outputs.output_variables
@@ -149,7 +149,7 @@ def inference(cfg : DictConfig):
         hour+=1
     for i in range(sample.shape[0]):
         # scale the input sample
-        x_env_sample = preprocess.envir_scaler.scaler.transform(sample[i, :, :])
+        x_env_sample = preprocess.input_scaler.scaler.transform(sample[i, :, :])
         y_sample = model_predict(x_env_sample, model)
         y_output_sample.append(y_sample)
         

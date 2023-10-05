@@ -69,7 +69,7 @@ def inference(cfg : DictConfig):
     envir_direction_dict = preprocess.feature_eng.envir_direction_dict
     df = preprocess.feature_eng.get_cos_sin_decomposition(envir_direction_dict, df)
     X_env = preprocess.split_transform.get_numpy_input_1D_set(df, X_channel_list)
-    x_env = preprocess.envir_scaler.scaler.transform(X_env)
+    x_env = preprocess.input_scaler.scaler.transform(X_env)
 
     # predict nominal spectrum thanks to the surrogate model
     def model_predict(x_env: np.array, model :SurrogateModule ) -> np.ndarray :
@@ -88,7 +88,7 @@ def inference(cfg : DictConfig):
     y_hat = model_predict(x_env, model)
 
     # unscale y_hat
-    Yscalers = preprocess.y_spectrum_scaler.scalers
+    Yscalers = preprocess.output_scaler.scalers
 
     if preprocess.perform_decomp :
         PCAs = preprocess.decomp_y_spectrum.decomps
@@ -147,7 +147,7 @@ def inference(cfg : DictConfig):
         hour+=1
     for i in range(sample.shape[0]):
         # scale the input sample
-        x_env_sample = preprocess.envir_scaler.scaler.transform(sample[i, :, :])
+        x_env_sample = preprocess.input_scaler.scaler.transform(sample[i, :, :])
         y_sample = model_predict(x_env_sample, model)
         y_output_sample.append(y_sample)
         

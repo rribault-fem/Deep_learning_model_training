@@ -32,6 +32,8 @@ class Split_transform :
     split_method : str
     envir_bin : dict
     cut_low_frequency : float
+    train_set_start_date : Optional[str] = None # format : '2023-06-20 13'
+    train_set_end_date : Optional[str] = None   # format : '2023-06-20 13'
 
     def process_data(self, df : xr.Dataset, X_channel_list : List[str], Y_channel_list : List[str], df_train_set_envir_filename: str ) -> Tuple[np.array, np.array]:
         """
@@ -104,10 +106,15 @@ class Split_transform :
 
         
         log =  logging.getLogger(os.environ['logger_name'])
-        X_numpy_channels_training_set = self.get_numpy_input_2D_set(df_training_set, X_channel_list)
+        
+        # Check the dimension of the input data
+        dimension_set = len(df_training_set[X_channel_list[0]].dims)
+
+        X_numpy_channels_training_set = getattr(self, 'get_numpy_input_{}D_set'.format(str(dimension_set)))(df_training_set, X_channel_list)
         log.info('# selected input channels are : {}'.format(str(X_channel_list)))
         log.info('# channel training set numpy transformation success. Shape of channel training is {} '.format(str(np.shape(X_numpy_channels_training_set))))
-        X_numpy_channels_test_set = self.get_numpy_input_2D_set(df_test_set, X_channel_list)
+        
+        X_numpy_channels_test_set = getattr(self, 'get_numpy_input_{}D_set'.format(str(dimension_set)))(df_test_set, X_channel_list)
         log.info('# channel test set numpy transformation success. Shape of channel test is {}'.format(np.shape(X_numpy_channels_test_set)))
 
         # Cut off frequency to not try to predict noise
@@ -118,9 +125,10 @@ class Split_transform :
         X_numpy_channels_training_set = X_numpy_channels_training_set #[:, cut_low_freq_arg :  ,:] for frequency
         X_numpy_channels_test_set = X_numpy_channels_test_set #[:, cut_low_freq_arg :  ,:] for frequency
 
-
-        Y_numpy_channels_training_set = self.get_numpy_input_1D_set(df_training_set, Y_channel_list)
-        Y_numpy_channels_test_set = self.get_numpy_input_1D_set(df_test_set, Y_channel_list)
+        # Check the dimension of the input data
+        dimension_set = len(df_training_set[X_channel_list[0]].dims)
+        Y_numpy_channels_training_set = getattr(self, 'get_numpy_input_{}D_set'.format(str(dimension_set)))(df_training_set, Y_channel_list)
+        Y_numpy_channels_test_set = getattr(self, 'get_numpy_input_{}D_set'.format(str(dimension_set)))(df_test_set, Y_channel_list)
     
         return X_numpy_channels_training_set, X_numpy_channels_test_set, Y_numpy_channels_training_set, Y_numpy_channels_test_set
     
@@ -132,6 +140,8 @@ class Split_transform :
         df_training_set = df_training_set.drop(vars_to_remove)
         os.makedirs(os.path.dirname(df_train_set_envir_filename), exist_ok=True)
         df_training_set.to_netcdf(os.path.join(df_train_set_envir_filename))
+    
+
 
     def find_test_set_in_model_validity_domain(self, df):
         """This function is used to find a valid test set.
@@ -247,7 +257,16 @@ class Split_transform :
         df_training_set = df.isel(time=slice(0, -self.test_nb))
         df_test_set = df.isel(time=slice(-self.test_nb, None))
         return df_training_set, df_test_set
-
+    
+    def find_test_set_in_for_monabiop_report(self, df: xr.Dataset) -> Tuple[xr.Dataset, xr.Dataset]:
+        log =  logging.getLogger(os.environ['logger_name'])
+        log.info('#####')
+        log.info('split test and train sets with train set in june ')
+        log.info('#####')
+        df_training_set = df.sel(time=slice(self.train_set_start_date, self.train_set_end_date))
+        # for test set, remove all dates in june
+        df_test_set = df.sel(time=slice('2023-06-20 13', '2023-06-20 14'))
+        return df_training_set, df_test_set
     
     def get_numpy_input_1D_set(self, df, envir_variables) :
         # loading channels data in numpy for CNN 

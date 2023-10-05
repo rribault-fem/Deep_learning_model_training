@@ -159,7 +159,7 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         ####
         # Scale 1D output data with scaler defined in hydra config file
         ####
-        y_train, y_test  = preprocess.envir_scaler.scale_data(Y_train, Y_test)
+        y_train, y_test  = preprocess.input_scaler.scale_data(Y_train, Y_test)
 
         ####
         # Decompose x data with decomposition methode defined in hydra config file
@@ -170,7 +170,7 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         ####
         # Scale 2D data with scaler defined in hydra config file
         ####
-        x_train, x_test = preprocess.y_spectrum_scaler.scale_data(X_train, X_test)
+        x_train, x_test = preprocess.output_scaler.scale_data(X_train, X_test)
 
         ####
         # Shuffle training data
