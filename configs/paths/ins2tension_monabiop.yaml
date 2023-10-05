@@ -17,7 +17,7 @@ output_dir: ${hydra:runtime.output_dir}
 # path to working directory
 work_dir: ${hydra:runtime.cwd}
 
-dataset: ${paths.data_dir}/netcdf_databases/DB_INS_to_tension_Monabiop_clean_sensors.nc
+dataset: ${paths.data_dir}/netcdf_databases/0310_DB_INS_to_tension.nc
 
 # To save the model training environment dataset along with the model in the output folder
 training_env_dataset: ${paths.output_dir}/envir_training_db_ins2tension_monabiop.nc

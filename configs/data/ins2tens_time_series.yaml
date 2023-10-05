@@ -1,0 +1,6 @@
+_target_: data.surrogate_time_series.SurrogateDataModule
+batch_size: 32
+num_workers: 8
+pin_memory: False
+reshape_length: 1
+step_diff_y_x: -15

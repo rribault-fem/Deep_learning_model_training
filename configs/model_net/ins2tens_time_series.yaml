@@ -1,0 +1,3 @@
+
+_target_ : model.components.ins2tens_time_series.DenseIns2tens_time_series
+dropout_rate : 0.35
