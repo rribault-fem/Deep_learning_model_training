@@ -34,6 +34,8 @@ class Split_transform :
     cut_low_frequency : float
     train_set_start_date : Optional[str] = None # format : '2023-06-20 13'
     train_set_end_date : Optional[str] = None   # format : '2023-06-20 13'
+    test_set_start_date : Optional[str] = None # format : '2023-06-20 13'
+    test_set_end_date : Optional[str] = None   # format : '2023-06-20 13'
 
     def process_data(self, df : xr.Dataset, X_channel_list : List[str], Y_channel_list : List[str], df_train_set_envir_filename: str ) -> Tuple[np.array, np.array]:
         """
@@ -265,7 +267,7 @@ class Split_transform :
         log.info('#####')
         df_training_set = df.sel(time=slice(self.train_set_start_date, self.train_set_end_date))
         # for test set, remove all dates in june
-        df_test_set = df.sel(time=slice('2023-06-20 13', '2023-06-20 14'))
+        df_test_set = df.sel(time=slice(self.test_set_start_date, self.test_set_end_date))
         return df_training_set, df_test_set
     
     def get_numpy_input_1D_set(self, df, envir_variables) :

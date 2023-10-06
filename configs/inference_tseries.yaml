@@ -4,14 +4,14 @@ defaults:
   - _self_
   - hydra: default.yaml
   - extras: default.yaml
-  - paths: default.yaml
+  - paths: ins2tension_monabiop.yaml
 
 
-task_name: "eval"
+task_name: "infer_ins2tension"
 tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
-experiment_folder: outputs\train_surrogate\runs\2023-10-05_21-12-45
+experiment_folder: outputs\train_ins2tension\runs\2023-10-05_21-12-45
 
 # location of envir files for inference and for storing the model inference results. 
 save_path: ${paths.data_dir}/for_1RRI_tutorial

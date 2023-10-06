@@ -25,8 +25,10 @@ split_transform :
     dp: 45
     mag10: 2
     theta10: 45
-  train_set_start_date : '2023-06-20 11'
-  train_set_end_date : '2023-06-20 12'
+  train_set_start_date : '2023-06-20 13'
+  train_set_end_date : '2023-06-20 13'
+  test_set_start_date : '2023-06-20 13'
+  test_set_end_date : '2023-06-20 13'
 input_scaler:                                             # Environmental direction dictionary
   _target_: preprocessing.scaler.Scaler_2D                   # The target class that will be instanciated thanks to hydra
   scaler_option : MinMaxScaler 
