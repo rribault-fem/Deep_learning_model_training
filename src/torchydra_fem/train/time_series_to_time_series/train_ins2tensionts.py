@@ -4,20 +4,23 @@ import pickle
 import hydra
 from omegaconf import DictConfig
 import logging
-from Preprocessing import Preprocessing
-from model.surrogate_module import SurrogateModule
+
 from sklearn.utils import shuffle
 from lightning import Callback, LightningDataModule, Trainer
 from lightning.pytorch.loggers import Logger
 import torch
 from typing import List
-import utils
-from utils.load_env_file import load_env_file
+from torchydra_fem.utils.load_env_file import load_env_file
 import os
-import math
+
+from torchydra_fem.Preprocessing import Preprocessing
+from torchydra_fem.model.surrogate_module import SurrogateModule
+import torchydra_fem.utils as utils
+
+
 
 # version_base=1.1 is used to make hydra change the current working directory to the hydra output path
-@hydra.main(config_path="../configs", config_name="train.yaml", version_base="1.3")
+@hydra.main(config_path="../../../../configs", config_name="train ins2tension_ts.yaml", version_base="1.3")
 def main(cfg :  DictConfig):
         """
         This function serves as the main entry point for the script.
@@ -36,7 +39,7 @@ def main(cfg :  DictConfig):
         Returns:
         None
         """
-        load_env_file(f"{hydra.utils.get_original_cwd()}/env.yaml")
+        utils.load_env_file(f"{hydra.utils.get_original_cwd()}/env.yaml")
         os.environ['logger_name'] = cfg.task_name
         log = logging.getLogger(os.environ['logger_name'])
 
@@ -53,7 +56,7 @@ def main(cfg :  DictConfig):
         with open(file_path, 'wb') as f:
                 pickle.dump(preprocess, f)
 
-        x_input_size, spectrum_decomp_length, spectrum_channel_nb = np.shape(x_train)[1], np.shape(y_train)[1], np.shape(y_train)[2]
+        # y_output_size, two_dims_decomp_length, two_dims_channel_nb = np.shape(y_train)[1], np.shape(x_train)[1], np.shape(x_train)[2]
 
         # instanciate DataModule. Parameters depending on dataset are passed as args. 
         kwargs = {
@@ -67,9 +70,11 @@ def main(cfg :  DictConfig):
 
         # instanciate model. Parameters depending on dataset are passed as kwargs.
         kwargs = {
-                "x_input_size" : x_input_size,
-                "spectrum_decomp_length" : spectrum_decomp_length,
-                "spectrum_channel_nb" : spectrum_channel_nb}
+                "nb_obs" : datamodule.shape_x_train[0],
+                "two_dims_decomp_length" : datamodule.shape_x_train[1],
+                "two_dims_channel_nb" : datamodule.shape_x_train[2],}
+        
+        # save kwargs to hydra config
         
         log.info(f"Importing model net {cfg.model_net._target_}")
         # can be passed as *args because all arguments are defined above, no argument defined in .yaml config file.
@@ -142,62 +147,41 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         df = df.dropna(dim='time', how='any')
 
         preprocess.unit_dictionnary = {}
-        for var in preprocess.inputs_outputs.envir_variables :
+        for var in preprocess.inputs_outputs.input_variables :
                 preprocess.unit_dictionnary[var] = df[var].attrs['unit']
-        for var in preprocess.inputs_outputs.neuron_variables :
-                preprocess.unit_dictionnary[var] = df[var].attrs['unit']
-        
-        if not preprocess.perform_decomp :
-                cut_low_freq_arg = np.argwhere(df.Frequency_psd.values>(preprocess.split_transform.cut_low_frequency))[0][0]
-                if math.log(cut_low_freq_arg,2) - int(math.log(cut_low_freq_arg,2)) != 0 :
-                        cut_low_freq_arg = 345
-                        preprocess.split_transform.cut_low_frequency =float(df["Frequency_psd"].isel(Frequency_psd= cut_low_freq_arg-1))
-     
-        preprocess.Frequency_psd =df['Frequency_psd'].where(df['Frequency_psd']>(preprocess.split_transform.cut_low_frequency), drop=True)
-
-        ####
-        # Re-arrange direction columns because 0/360 discontinuity do not fit with neural networks.
-        ####
-        if preprocess.feature_eng.envir_direction_dict is not None :
-                # Select the sin_cos_method 
-                # The user can define a custom  method by adding a method to this class and then replace the sin_cos_method name to the hydra config file
-                if hasattr(preprocess.feature_eng, preprocess.feature_eng.sin_cos_method):
-                        log = logging.getLogger(os.environ['logger_name'])
-                        log.info(f" run <{preprocess.feature_eng.sin_cos_method}> method")
-                        df = getattr(preprocess.feature_eng, preprocess.feature_eng.sin_cos_method ) (preprocess.feature_eng.envir_direction_dict, df)
-                        for magnitude, angle in preprocess.feature_eng.envir_direction_dict.items() :
-                                preprocess.inputs_outputs.envir_variables.remove(angle)
-                                preprocess.inputs_outputs.envir_variables.append(f'{magnitude}_cos')
-                                preprocess.inputs_outputs.envir_variables.append(f'{magnitude}_sin')
+        for var in preprocess.inputs_outputs.output_variables :
+                preprocess.unit_dictionnary[var] = 'kN'
         
         ####
         # Split data into train and test sets. 
         ####
         X_train, X_test, Y_train, Y_test = preprocess.split_transform.process_data(df=df, 
-                                                                        X_channel_list=preprocess.inputs_outputs.envir_variables,
-                                                                        Y_channel_list=preprocess.inputs_outputs.neuron_variables,
+                                                                        X_channel_list=preprocess.inputs_outputs.input_variables,
+                                                                        Y_channel_list=preprocess.inputs_outputs.output_variables,
                                                                         df_train_set_envir_filename=cfg.paths.training_env_dataset)
         ####
-        # Scale input data with scaler defined in hydra config file
+        # Scale 1D output data with scaler defined in hydra config file
         ####
-        x_train, x_test  = preprocess.input_scaler.scale_data(X_train, X_test)
+        y_train, y_test  = preprocess.output_scaler.scale_data(Y_train, Y_test)
 
         ####
-        # Decompose y data with decomposition methode defined in hydra config file
+        # Decompose x data with decomposition methode defined in hydra config file
         #### 
         if preprocess.perform_decomp :
-                Y_train, Y_test = preprocess.decomp_y_spectrum.decomp_data(Y_train, Y_test)
+                x_train, x_test = preprocess.decomp_y_spectrum.decomp_data(X_train, X_test)
 
         ####
-        # Scale Y spectrum data with scaler defined in hydra config file
+        # Scale 2D data with scaler defined in hydra config file
         ####
-        y_train, y_test = preprocess.output_scaler.scale_data(Y_train, Y_test)
+        x_train, x_test = preprocess.input_scaler.scale_data(X_train, X_test)
 
         ####
         # Shuffle training data
         ####
         x_train, y_train = shuffle(x_train, y_train)
 
+        os.environ['logger_name'] = cfg.task_name
+        log = logging.getLogger(os.environ['logger_name'])
 
         log.info(f'x_train shape: {np.shape(x_train)}')
         log.info(f'y_train shape: {np.shape(y_train)}')

@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "args" : ["model_net=conv1d_surr.yaml"],
+            "args" : ["model_net=ins2tens_time_series_conv1d.yaml"],
             "console": "integratedTerminal",
             "justMyCode": true
         }

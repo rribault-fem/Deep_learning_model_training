@@ -2,7 +2,7 @@
 # This is the default config file for hydra
 # It is used to configure the training and testing of the model and the dataset
 
-_target_: Preprocessing.Preprocessing
+_target_: torchydra_fem.Preprocessing.Preprocessing
 
 defaults:
   - _self_

@@ -2,15 +2,15 @@ import xarray as xr
 import os
 import pickle
 import numpy as np
-import virtual_sensor.export_data.Neuron as Neuron
-from Preprocessing import Preprocessing
+import torchydra_fem.virtual_sensor.export_data.Neuron as Neuron
+from torchydra_fem.Preprocessing import Preprocessing
 from scipy.stats import qmc
-from model.surrogate_module import SurrogateModule
+from torchydra_fem.model.surrogate_module import SurrogateModule
 import torch
 from typing import List
 import yaml
-import utils
-from utils.load_env_file import load_env_file
+import torchydra_fem.utils as utils
+from torchydra_fem.utils.load_env_file import load_env_file
 import hydra
 from omegaconf import DictConfig
 import logging
@@ -35,7 +35,6 @@ def inference(cfg : DictConfig):
 
     inference_dataset_path = os.path.join(cfg.paths.dataset)
     infer_dataset = xr.open_dataset(inference_dataset_path)
-    infer_dataset = infer_dataset.sel(time = slice('2023-06-20 13', '2023-06-20-14'))
 
     # load preprocessing pipeline
     # Use of pickle object to load the scaler already fit to the data
@@ -60,9 +59,9 @@ def inference(cfg : DictConfig):
     
     except KeyError as e :
         kwargs = {
-            "nb_obs" : 35985,
-            "two_dims_decomp_length" : 1,
-            "two_dims_channel_nb" : 3}
+            "y_output_size" : 4,
+            "two_dims_decomp_length" : 36000,
+            "two_dims_channel_nb" : 6}
     
     net: torch.nn.Module = hydra.utils.instantiate(hydra_config['model_net'], **kwargs)
 
@@ -75,7 +74,7 @@ def inference(cfg : DictConfig):
     # Use preprocessing pipeline to prepare test data for inference
     df= infer_dataset
     X_infer = preprocess.split_transform.get_numpy_input_2D_set(df, X_channel_list)
-    x_infer = preprocess.input_scaler.scale_data_infer(X_infer)
+    x_infer = preprocess.output_scaler.scale_data_infer(X_infer)
 
     # predict nominal spectrum thanks to the surrogate model
     def model_predict(x_infer: np.array, model :SurrogateModule ) -> np.ndarray :
@@ -95,15 +94,16 @@ def inference(cfg : DictConfig):
     y_hat = model_predict(x_infer, model)
 
     # unscale y_hat
-    Y_hat = preprocess.output_scaler.inverse_transform_data_infer(y_hat)
+    Yscaler = preprocess.input_scaler.scaler
+    Y_hat = Yscaler.inverse_transform(y_hat)
 
     variables = preprocess.inputs_outputs.output_variables
 
     for var in variables :
-        array = prepare_new_array(Y_hat[:, :, variables.index(var)], 'NNet_'+var)
-        infer_dataset['NNet_'+var] = array
+        array = prepare_new_array(Y_hat[:, variables.index(var)], var.replace('Sensor', 'NNet'))
+        infer_dataset[var] = array
 
-    infer_dataset.to_netcdf(r"C:\Users\romain.ribault\Documents\git_folders\torchydra\data\netcdf_databases\inference.nc")
+    infer_dataset
 
     # if preprocess.perform_decomp :
     #     PCAs = preprocess.decomp_y_spectrum.decomps
@@ -221,11 +221,12 @@ def inference(cfg : DictConfig):
 
     return metric_dict, object_dict
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="inference_tseries.yaml")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="inference ins2tension.yaml")
 def main(cfg: DictConfig) -> None:
     # apply extra utilities
     # (e.g. ask for tags if none are provided in cfg, print cfg tree, etc.)
     utils.extras(cfg)
+
     inference(cfg)
 
 
@@ -236,9 +237,9 @@ def prepare_new_array(NN_var : np.array, vars : str) -> xr.DataArray:
             "attrs" : {
                 "description" : f" Inference of the {vars} using a neural network",
                 "source" : "Neural network"},
-            "dims" : ["time", "time_sensor"],
+            "dims" : "time",
             "data"  : NN_var,
-            "name" : f"NN_{vars}",
+            "name" : "NN_Sensor_mean"
         })
      
     return array

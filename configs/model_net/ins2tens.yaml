@@ -1,5 +1,5 @@
 
-_target_ : model.components.ins2tens.ins2tens
+_target_ : torchydra_fem.model.components.ins2tens.ins2tens
 dropout_rate : 0.3
 activation : 
   _target_ : torch.nn.ReLU

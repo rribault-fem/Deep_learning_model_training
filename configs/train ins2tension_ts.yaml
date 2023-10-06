@@ -2,7 +2,7 @@
 # This is the default config file for hydra
 # It is used to configure the training and testing of the model and the dataset
 
-_target_: Preprocessing.Preprocessing
+_target_: torchydra_fem.Preprocessing.Preprocessing
 
 defaults:
   - _self_
@@ -10,7 +10,7 @@ defaults:
   - paths: ins2tension_monabiop.yaml
   - model : surrogate_module.yaml
   - model_net : ins2tens_time_series.yaml
-  - trainer: cpu.yaml
+  - trainer: gpu.yaml
   - callbacks : default.yaml
   - logger: many_loggers.yaml
   - data : ins2tens_time_series.yaml

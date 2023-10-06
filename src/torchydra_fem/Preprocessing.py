@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional, Dict
 import xarray as xr
-from preprocessing.decomp_y_spectrum import Decomp_y_spectrum
-from preprocessing.split_transform import Split_transform
-from preprocessing.feature_eng import FeatureEng
-from preprocessing.inputs_outputs_v1 import Inputs_ouputs_v1
-from preprocessing.scaler import Scaler
+from torchydra_fem.preprocessing.decomp_y_spectrum import Decomp_y_spectrum
+from torchydra_fem.preprocessing.split_transform import Split_transform
+from torchydra_fem.preprocessing.feature_eng import FeatureEng
+from torchydra_fem.preprocessing.inputs_outputs_v1 import Inputs_ouputs_v1
+from torchydra_fem.preprocessing.scaler import Scaler
 
 @dataclass
 class Preprocessing :    

@@ -1,4 +1,4 @@
-_target_ : Preprocessing.Preprocessing
+_target_ : torchydra_fem.Preprocessing.Preprocessing
   # Split transform step : split the dataset into a training and a test set
   # Then transform the xr:datasets into numpy arrays
 
@@ -8,13 +8,13 @@ defaults :
 
 
 feature_eng : 
-  _target_ : preprocessing.feature_eng.FeatureEng      
+  _target_ : torchydra_fem.preprocessing.feature_eng.FeatureEng      
   sin_cos_method: get_cos_sin_decomposition           # Name of the method to use for the feature engineering (cf.py file) : current option available
   envir_direction_dict:
     mag10: theta10
     hs: dp
 split_transform : 
-  _target_ : preprocessing.split_transform.Split_transform 
+  _target_ : torchydra_fem.preprocessing.split_transform.Split_transform 
   test_nb : 60                                          # Number of test samples and clusters
   cluster: 3                                            # Number of clusters                          
   split_method : find_test_set_in_model_validity_domain # Name of the method to use for the split (cf.py file) : current option available
@@ -26,14 +26,14 @@ split_transform :
     mag10: 2
     theta10: 45
 envir_scaler:                                             # Environmental direction dictionary
-  _target_: preprocessing.envir_scaler.Envir_scaler       # The target class that will be instanciated thanks to hydra
+  _target_: torchydra_fem.preprocessing.envir_scaler.Envir_scaler       # The target class that will be instanciated thanks to hydra
   scaler :                                                # name of the method to use for the scaling (cf.py file) : current option available MinMaxScaler or StandardScaler
     _target_: sklearn.preprocessing.MinMaxScaler          # The target class that will be instanciated thanks to hydra
 perform_decomp : True                                     # If true, perform PCA or another decomposition on the y spectrum. If false use cut the frequency range to get 512 frequencies values.
 decomp_y_spectrum :
-  _target_ : preprocessing.decomp_y_spectrum.Decomp_y_spectrum
+  _target_ : torchydra_fem.preprocessing.decomp_y_spectrum.Decomp_y_spectrum
   decomp_option : PCA                                     # name of the method to use for the decomposition (cf.py file) : current option available PCA or ICA
   decomp_n_component : 24
 y_spectrum_scaler :
-  _target_ : preprocessing.y_spectrum_scaler.Y_spectrum_scaler
+  _target_ : torchydra_fem.preprocessing.y_spectrum_scaler.Y_spectrum_scaler
   scaler_option : MinMaxScaler                            # name of the method to use for the scaling (cf.py file) : any scaler availeble in sklearn preprocessing module.

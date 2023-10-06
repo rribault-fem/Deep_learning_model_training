@@ -1,4 +1,4 @@
-_target_: data.surrogate.SurrogateDataModule
+_target_: torchydra_fem.data.surrogate.SurrogateDataModule
 batch_size: 32
 num_workers: 8
 pin_memory: False

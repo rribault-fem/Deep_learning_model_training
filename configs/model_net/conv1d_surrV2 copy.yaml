@@ -1,5 +1,5 @@
 
-_target_ : model.components.conv1d_surrv2.conv1d_surrv2
+_target_ : torchydra_fem.model.components.conv1d_surrv2.conv1d_surrv2
 dropout_rate : 0.3
 activation : 
   _target_ : torch.nn.ReLU

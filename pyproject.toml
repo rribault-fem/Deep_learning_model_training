@@ -3,10 +3,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "torchydra_rribault-fem"
+name = "torchydra_fem"
 version = "0.0.1"
 authors = [
-  { name="Example Author", email="romain.ribault@france-energies-martines.org" },
+  { name="Romain Ribault", email="romain.ribault@france-energies-marines.org" },
 ]
 description = "a package to track deep learning experiments and models for Dionysos project"
 readme = "README.md"

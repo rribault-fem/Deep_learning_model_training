@@ -1,4 +1,4 @@
-_target_ : model.components.conv1d_surr_nopca.conv1d_surr_nopca
+_target_ : torchydra_fem.model.components.conv1d_surr_nopca.conv1d_surr_nopca
 activation : 
   _target_ : torch.nn.ReLU
 first_dense_layer_out_features: 64

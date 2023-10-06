@@ -1,5 +1,5 @@
 # config.yaml
-_target_: model.surrogate_module.SurrogateModule
+_target_: torchydra_fem.model.surrogate_module.SurrogateModule
 
 optimizer:
   _target_: torch.optim.Adam

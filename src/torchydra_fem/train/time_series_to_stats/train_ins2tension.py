@@ -4,17 +4,19 @@ import pickle
 import hydra
 from omegaconf import DictConfig
 import logging
-from Preprocessing import Preprocessing
-from model.surrogate_module import SurrogateModule
+
 from sklearn.utils import shuffle
 from lightning import Callback, LightningDataModule, Trainer
 from lightning.pytorch.loggers import Logger
 import torch
 from typing import List
-import utils
-from utils.load_env_file import load_env_file
 import os
 import math
+
+from torchydra_fem.utils.load_env_file import load_env_file
+import torchydra_fem.utils as utils
+from torchydra_fem.Preprocessing import Preprocessing
+from torchydra_fem.model.surrogate_module import SurrogateModule
 
 # version_base=1.1 is used to make hydra change the current working directory to the hydra output path
 @hydra.main(config_path="../configs", config_name="train ins2tension.yaml", version_base="1.3")
