@@ -2,7 +2,8 @@ from typing import Any
 
 import torch
 from lightning import LightningModule
-from torchmetrics import MeanSquaredError, MaxMetric, MeanMetric
+from torchmetrics import MeanSquaredError, MaxMetric, MeanMetric, MinMetric, MeanAbsolutePercentageError
+import torchmetrics
 
 
 class SurrogateModule(LightningModule):
@@ -26,6 +27,9 @@ class SurrogateModule(LightningModule):
         scheduler: torch.optim.lr_scheduler,
         net: torch.nn.Module = None,
         criterion = torch.nn.MSELoss(),
+        train_loss = torchmetrics.MeanSquaredError(),
+        val_loss = torchmetrics.MeanSquaredError(),
+        test_loss = torchmetrics.MeanSquaredError(),
     ):
         super().__init__()
 
@@ -42,13 +46,14 @@ class SurrogateModule(LightningModule):
         self.val_mse = MeanSquaredError()
         self.test_mse = MeanSquaredError()
 
+
         # for averaging loss across batches
         self.train_loss = MeanMetric()
         self.val_loss = MeanMetric()
         self.test_loss = MeanMetric()
 
         # # for tracking best so far validation accuracy
-        self.val_mse_best = MaxMetric()
+        self.val_mse_best = MinMetric()
 
     def forward(self, x: torch.Tensor):
         return self.net.forward(x)

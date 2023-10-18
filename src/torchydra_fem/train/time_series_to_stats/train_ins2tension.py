@@ -19,7 +19,7 @@ from torchydra_fem.Preprocessing import Preprocessing
 from torchydra_fem.model.surrogate_module import SurrogateModule
 
 # version_base=1.1 is used to make hydra change the current working directory to the hydra output path
-@hydra.main(config_path="../configs", config_name="train ins2tension.yaml", version_base="1.3")
+@hydra.main(config_path="../configs", config_name="time_series_to_stats.yaml", version_base="1.3")
 def main(cfg :  DictConfig):
         """
         This function serves as the main entry point for the script.
@@ -117,6 +117,8 @@ def main(cfg :  DictConfig):
                 trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"))
 
         train_metrics = trainer.callback_metrics
+
+        log.info("Training finished!")
 
         # return the metric to optimise for hyper parameter search
         return train_metrics['train/loss']

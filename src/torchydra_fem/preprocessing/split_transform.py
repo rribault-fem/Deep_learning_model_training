@@ -263,7 +263,7 @@ class Split_transform :
     def find_test_set_in_for_monabiop_report(self, df: xr.Dataset) -> Tuple[xr.Dataset, xr.Dataset]:
         log =  logging.getLogger(os.environ['logger_name'])
         log.info('#####')
-        log.info('split test and train sets with train set in june ')
+        log.info('split test and train sets with train ')
         log.info('#####')
         df_training_set = df.sel(time=slice(self.train_set_start_date, self.train_set_end_date))
         # for test set, remove all dates in june

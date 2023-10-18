@@ -28,6 +28,7 @@ class Scaler_1D(Scaler) :
     
     scaler_option : str
     scalers : Optional[List] = None
+    donot_scale : Optional[bool] = False
     # the name of a method defined below. This name is defined in Hydra config file
     # can be any sklearn transformer or a custom transformer with transformer API
 
@@ -86,6 +87,7 @@ class Scaler_2D(Scaler) :
     # The pca option is the name of the method to use for the pca transformation
     scaler_option : str
     scalers : Optional[List] = None
+    donot_scale : Optional[bool] = False
 
     def scale_data(self, Y_numpy_channels_training_set : np.array, Y_numpy_channels_test_set: np.array) ->  Tuple[np.array, np.array]:
         """

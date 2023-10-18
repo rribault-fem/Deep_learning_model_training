@@ -1,0 +1,1 @@
+python src/torchydra_fem/train/time_series_to_time_series.train.py --config_name 01_train\time_series_to_time_series\monabiop_conv1d.yaml

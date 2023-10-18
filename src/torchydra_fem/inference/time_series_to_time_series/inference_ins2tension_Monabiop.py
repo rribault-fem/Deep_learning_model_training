@@ -8,13 +8,15 @@ import yaml
 import hydra
 from omegaconf import DictConfig
 import logging
+from lightning import LightningDataModule
+from torch.utils.data import TensorDataset
 
 from torchydra_fem.utils.load_env_file import load_env_file
 import torchydra_fem.utils as utils
 from torchydra_fem.Preprocessing import Preprocessing
 from torchydra_fem.model.surrogate_module import SurrogateModule
 
-@hydra.main(version_base="1.3", config_path="..../configs", config_name="inference_tseries.yaml")
+@hydra.main(version_base="1.3", config_path="../../../../configs", config_name="inference_tseries.yaml")
 def main(cfg: DictConfig) -> None:
     # apply extra utilities
     # (e.g. ask for tags if none are provided in cfg, print cfg tree, etc.)
@@ -42,7 +44,7 @@ def inference(cfg : DictConfig):
 
     inference_dataset_path = os.path.join(cfg.paths.dataset)
     infer_dataset = xr.open_dataset(inference_dataset_path)
-    infer_dataset = infer_dataset.sel(time = slice('2023-06-20 13', '2023-06-20-14'))
+    infer_dataset = infer_dataset.sel(time = slice('2023-06-20 13', '2023-06-21-14'))
 
     # load preprocessing pipeline
     # Use of pickle object to load the scaler already fit to the data
@@ -50,13 +52,26 @@ def inference(cfg : DictConfig):
     with open(preprocess_path, 'rb') as f:
         preprocess : Preprocessing = pickle.load(f)
 
+    # Load inputs list
+    X_channel_list : List[str] = preprocess.inputs_outputs.input_variables
+
+    # Use preprocessing pipeline to prepare test data for inference
+    df= infer_dataset
+    X_infer = preprocess.split_transform.get_numpy_input_2D_set(df, X_channel_list)
+    x_infer = preprocess.input_scaler.scale_data_infer(X_infer)
+
+
     # load model
-    model_path = os.path.join(EXPERIMENT_PATH, r"checkpoints\last.ckpt")
     hydra_config_path = os.path.join(EXPERIMENT_PATH, r'.hydra/config.yaml' )
 
     with open(hydra_config_path, 'r') as f:
         hydra_config = yaml.safe_load(f)
 
+    datamodule : LightningDataModule = hydra.utils.instantiate(hydra_config['data'])
+
+    # setup x_infer to datamodule for model evaluation
+    datamodule.setup(stage='evaluate', x_test=x_infer)
+    
     if hydra_config['preprocessing']['perform_decomp'] == True:
         decomp_length = 24
     else : decomp_length = 512
@@ -67,42 +82,43 @@ def inference(cfg : DictConfig):
     
     except KeyError as e :
         kwargs = {
-            "nb_obs" : 35985,
-            "two_dims_decomp_length" : 1,
+            "nb_obs" : 10,
+            "two_dims_decomp_length" : 2399,
             "two_dims_channel_nb" : 3}
+        
+    model_path = os.path.join(EXPERIMENT_PATH, r"checkpoints\last.ckpt")
     
     net: torch.nn.Module = hydra.utils.instantiate(hydra_config['model_net'], **kwargs)
 
     # model kwargs parameters are infered from checkpoint
     model : SurrogateModule = SurrogateModule.load_from_checkpoint(model_path, net=net)
-
-    # Load inputs list
-    X_channel_list : List[str] = preprocess.inputs_outputs.input_variables
-
-    # Use preprocessing pipeline to prepare test data for inference
-    df= infer_dataset
-    X_infer = preprocess.split_transform.get_numpy_input_2D_set(df, X_channel_list)
-    x_infer = preprocess.input_scaler.scale_data_infer(X_infer)
+    
 
     # predict nominal spectrum thanks to the surrogate model
-    def model_predict(x_infer: np.array, model :SurrogateModule ) -> np.ndarray :
+    def model_predict(x_infer: np.array , model :SurrogateModule ) -> np.ndarray :
         
-        x_infer = torch.from_numpy(x_infer).float()
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        x_infer = x_infer.to(device)
         model = model.to(device)
+        x_infer = x_infer.to(device)
         model.eval()
         y_hat = model(x_infer)
-        y_hat = y_hat.detach().cpu().numpy()
+        
         
         return y_hat
     
     log = logging.getLogger(os.environ['logger_name'])
     log.info('Perform model predictions')
-    y_hat = model_predict(x_infer, model)
+
+    y_hat = model_predict(datamodule.x_eval, model)
+    y_hat = y_hat.detach().cpu().numpy()
+    y_hat = datamodule._undo_shift_reshape_data(y_hat)
+    
 
     # unscale y_hat
-    Y_hat = preprocess.output_scaler.inverse_transform_data_infer(y_hat)
+
+    if preprocess.output_scaler.donot_scale :
+        Y_hat = y_hat
+    else: Y_hat = preprocess.output_scaler.inverse_transform_data_infer(y_hat)
 
     variables = preprocess.inputs_outputs.output_variables
 

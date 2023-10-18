@@ -59,111 +59,87 @@ class SurrogateDataModule(LightningDataModule):
             [transforms.ToTensor()]
         )
 
-        required_kwargs_list = ['x_train', 'y_train', 'x_test', 'y_test']
-
-        for kwarg in required_kwargs_list:
-            if kwarg not in kwargs:
-                raise ValueError(f"Missing required kwarg: {kwarg}")
-
-        log =  logging.getLogger(os.environ['logger_name'])
-        log.info('###')      
-
-        # x and y have a time discrepancy of step_diff_y_x
-        # x and y are shifted by step_diff_y_x steps
-        log.info(f"Adjust x and y for time discrepancy of config : step_diff_y_x: {self.step_diff_y_x}")
-        if self.step_diff_y_x > 0:
-
-            kwargs['x_test'] = kwargs['x_test'][:, :-self.step_diff_y_x, :]
-            kwargs['x_train'] = kwargs['x_train'][:, :-self.step_diff_y_x, :]
-            
-            kwargs['y_test'] = kwargs['y_test'][:, self.step_diff_y_x:, :]
-            kwargs['y_train'] = kwargs['y_train'][:, self.step_diff_y_x:, :]
-        
-        elif self.step_diff_y_x < 0:
-                
-            kwargs['x_test'] = kwargs['x_test'][:, -self.step_diff_y_x:, :]
-            kwargs['x_train'] = kwargs['x_train'][:, -self.step_diff_y_x:, :]
-            
-            kwargs['y_test'] = kwargs['y_test'][:, :self.step_diff_y_x, :]
-            kwargs['y_train'] = kwargs['y_train'][:, :self.step_diff_y_x, :]
-
-        log.info(f"reshape data tensors for dense ANN")
-
-        # reshape tensor from 32, 36000, 3 to 32*60, 600, 3
-        kwargs['x_train'] = torch.from_numpy(kwargs['x_train']).float()
-        kwargs['x_train'] = kwargs['x_train'].reshape(-1, self.reshape_length, 3)
-        self.shape_x_train = np.shape(kwargs['x_train'])
-        log.info(f"x_train shape: {np.shape(kwargs['x_train'])}")
-
-        kwargs['y_train'] = torch.from_numpy(kwargs['y_train']).float()
-        kwargs['y_train'] = kwargs['y_train'].reshape(-1, self.reshape_length, 1)
-        self.shape_y_train = np.shape(kwargs['y_train'])
-        log.info(f"y_train shape: {np.shape(kwargs['y_train'])}")
-
-        kwargs['x_test'] = torch.from_numpy(kwargs['x_test']).float()
-        kwargs['x_test'] = kwargs['x_test'].reshape(-1, self.reshape_length, 3)
-        self.shape_x_test = np.shape(kwargs['x_test'])
-        log.info(f"x_test shape: {np.shape(kwargs['x_test'])}")
-
-        kwargs['y_test'] = torch.from_numpy(kwargs['y_test']).float()
-        kwargs['y_test'] = kwargs['y_test'].reshape(-1, self.reshape_length, 1)
-        self.shape_y_test = np.shape(kwargs['y_test'])
-        log.info(f"y_test shape: {np.shape(kwargs['y_test'])}")
-
-        self.data_train = TensorDataset(kwargs['x_train'], kwargs['y_train'])
-        self.data_val = TensorDataset(kwargs['x_test'], kwargs['y_test'])
-        self.data_test = ConcatDataset(datasets=[self.data_train, self.data_val])
-
+        self.data_test = None
+        self.data_train = None
+        self.data_val = None
 
     def setup(self,
-            stage: Optional[str] = None,
-            x_train: Optional[np.array] = None,
-            y_train: Optional[np.array] = None,
-            x_test: Optional[np.array] = None,
-            y_test: Optional[np.array] = None) :
+            stage: str = None,
+            x_train: np.array = None,
+            y_train: np.array = None,
+            x_test: np.array = None,
+            y_test: np.array = None) :
         """Load data. Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
 
         This method is called by lightning with both `trainer.fit()` and `trainer.test()`, so be
         careful not to execute things like random split twice!
         """
-        # load and split datasets only if not loaded already
-        if not self.data_train and not self.data_val and not self.data_test:
-            # load data
-            if self.step_diff_y_x > 0:
 
-                x_test = x_test[:, :-self.step_diff_y_x, :]
-                x_train = x_train[:, :-self.step_diff_y_x, :]
+    
+        if stage == "evaluate" :
+            self.x_eval = self._shift_reshape_data(x_test)
+
+        if stage == "validate" :
+            self.x_val, self.y_val = self._shift_reshape_data(x_test, y_test)
+
+        if stage == "train" or stage == "fit" and stage is None and x_train and y_train and x_test and y_test:
+
+            # load and split datasets only if not loaded already
+            if not self.data_train and not self.data_val and not self.data_test:
                 
-                y_test = y_test[:, self.step_diff_y_x:, :]
-                y_train = y_train[:, self.step_diff_y_x:, :]
-            
-            elif self.step_diff_y_x < 0:
-                    
-                    x_test = x_test[:, -self.step_diff_y_x:, :]
-                    x_train = x_train[:, -self.step_diff_y_x:, :]
-                    
-                    y_test = y_test[:, :self.step_diff_y_x, :]
-                    y_train = y_train[:, :self.step_diff_y_x, :]
+                x_train, y_train = self._shift_reshape_data(x_train, y_train)
+                self.data_train = TensorDataset(x_train, y_train)
+
+                x_test, y_test = self._shift_reshape_data(x_test, y_test)
+                self.data_val = TensorDataset(x_test, y_test)
+
+                self.data_test = ConcatDataset(datasets=[self.data_train, self.data_val])
+     
+    def _undo_shift_reshape_data(self, x: torch.Tensor = None ) -> torch.Tensor:
+        "function to apply after model prediction to undo the shift and reshape tensors"
+        
+        x = x.reshape(-1, 36000-abs(self.step_diff_y_x), np.shape(x)[-1])
+        
+        if self.step_diff_y_x !=0:
+            x_add = np.zeros((np.shape(x)[0], abs(self.step_diff_y_x), np.shape(x)[-1]))
+            x = np.concatenate((x, x_add), axis=1)
+
+        return x
 
 
-            
-            # reshape tensor from 32, 36000, 3 to 32*60, 600, 3
-            x_train = torch.from_numpy(x_train).float()
-            x_train = x_train.reshape(-1, self.reshape_length, 3)
+    def _shift_reshape_data(self, x: np.array, y: np.array = None )-> TensorDataset:
+        "specific for Monamoor data to shift time discrepancy and reshape tensors"
+        log =  logging.getLogger(os.environ['logger_name'])
+        log.info(f"Adjust x and y for time discrepancy of config : step_diff_y_x: {self.step_diff_y_x}")
 
-            y_train = torch.from_numpy(y_train).float()
-            y_train = y_train.reshape(-1, self.reshape_length, 1)
+        device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-            x_test = torch.from_numpy(x_test).float()
-            x_test = x_test.reshape(-1, self.reshape_length, 3)
+        if self.step_diff_y_x > 0:
+            x = x[:, :-self.step_diff_y_x, :]
+            if y is not None: y = y[:, self.step_diff_y_x:, :]
+        
+        elif self.step_diff_y_x <0:
+            x = x[:, -self.step_diff_y_x:, :]
 
-            y_test = torch.from_numpy(y_test).float()
-            y_test = y_test.reshape(-1, self.reshape_length, 1)
+            if y is not None: y = y[:, :self.step_diff_y_x, :]
+        
+        elif self.step_diff_y_x == 0:
+            pass
 
-            self.data_train = TensorDataset(x_train, y_train)
-            self.data_val = TensorDataset(x_test, y_test)
-            self.data_test = ConcatDataset(datasets=[self.data_train, self.data_val])
-
+        x = torch.from_numpy(x).float()
+        x.to(device)
+        x = x.reshape(-1, self.reshape_length, np.shape(x)[-1])
+        log.info(f"x shape: {np.shape(x)}")
+        self.shape_x = np.shape(x)
+    
+        if y is not None:
+            y = torch.from_numpy(y).float()
+            y.to(device)
+            y = y.reshape(-1, self.reshape_length, np.shape(y)[-1])
+            log.info(f"x shape: {np.shape(y)}")
+            return (x, y)
+    
+        else : return x
 
     def train_dataloader(self):
         return DataLoader(

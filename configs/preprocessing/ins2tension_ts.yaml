@@ -25,10 +25,10 @@ split_transform :
     dp: 45
     mag10: 2
     theta10: 45
-  train_set_start_date : '2023-06-01 00'
+  train_set_start_date : '2023-02-19 00'
   train_set_end_date : '2023-06-20 12'
   test_set_start_date : '2023-06-20 13'
-  test_set_end_date : '2023-06-20 13'
+  test_set_end_date : '2023-06-30 23'
 input_scaler:                                             # Environmental direction dictionary
   _target_: torchydra_fem.preprocessing.scaler.Scaler_2D                   # The target class that will be instanciated thanks to hydra
   scaler_option : MinMaxScaler 
@@ -39,4 +39,5 @@ decomp_y_spectrum :
   decomp_n_component : 24
 output_scaler :
   _target_ : torchydra_fem.preprocessing.scaler.Scaler_2D
+  donot_scale : False                                      # If true, do not scale the output
   scaler_option : MinMaxScaler                            # name of the method to use for the scaling (cf.py file) : any scaler availeble in sklearn preprocessing module.

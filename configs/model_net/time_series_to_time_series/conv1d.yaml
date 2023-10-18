@@ -1,0 +1,5 @@
+
+_target_ : torchydra_fem.model.components.time_series_to_time_series.conv1d.TimeSeriesToTimeSeriesConv1D
+dropout_rate : 0.35
+latent_space_dim: 64
+activation: nn.GELU

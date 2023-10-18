@@ -9,10 +9,10 @@ defaults:
   - preprocessing: ins2tension_ts.yaml
   - paths: ins2tension_monabiop.yaml
   - model : surrogate_module.yaml
-  - model_net : ins2tens_time_series.yaml
+  - model_net : time_series_to_time_series/conv1d.yaml
   - trainer: gpu.yaml
   - callbacks : default.yaml
-  - logger: many_loggers.yaml
+  - logger: tensorboard.yaml
   - data : ins2tens_time_series.yaml
   - extras: default.yaml
   - hydra: default.yaml
@@ -24,7 +24,7 @@ defaults:
   # config for hyperparameter optimization
   - hparams_search: null
 
-task_name: "train_ins2tension"        # task name, determines output directory path
+task_name: "Monabiop//time_series_to_time_series//conv1d"        # task name, determines output directory path
 
 # tags to help you identify your experiments
 # you can overwrite this in experiment configs

@@ -4,11 +4,14 @@ import pickle
 import hydra
 from omegaconf import DictConfig
 import logging
+import yaml
+import sys
 
 from sklearn.utils import shuffle
 from lightning import Callback, LightningDataModule, Trainer
 from lightning.pytorch.loggers import Logger
-import torch
+from torch.nn import Module
+from torch import set_float32_matmul_precision, compile, device, cuda
 from typing import List
 from torchydra_fem.utils.load_env_file import load_env_file
 import os
@@ -57,34 +60,34 @@ def main(cfg :  DictConfig):
                 pickle.dump(preprocess, f)
 
         # y_output_size, two_dims_decomp_length, two_dims_channel_nb = np.shape(y_train)[1], np.shape(x_train)[1], np.shape(x_train)[2]
-
-        # instanciate DataModule. Parameters depending on dataset are passed as args. 
-        kwargs = {
-                "x_train" : x_train,
-                "y_train" : y_train,
-                "x_test" : x_test,
-                "y_test" : y_test}
-        
         log.info(f"Instantiating datamodule <{cfg.data._target_}>")
-        datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data, **kwargs)
-
+        datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
+        datamodule.setup(stage='train', x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
         # instanciate model. Parameters depending on dataset are passed as kwargs.
         kwargs = {
-                "nb_obs" : datamodule.shape_x_train[0],
-                "two_dims_decomp_length" : datamodule.shape_x_train[1],
-                "two_dims_channel_nb" : datamodule.shape_x_train[2],}
+                        "nb_obs" : datamodule.shape_x[0],
+                        "two_dims_decomp_length" : datamodule.shape_x[1],
+                        "two_dims_channel_nb" : datamodule.shape_x[2],}
         
         # save kwargs to hydra config
+        # add kwargs to hydra config
+        # cfg.model_net = DictConfig(cfg.model_net).update(kwargs)
+        # # save hydra config to disk
+        # hydra_config_path = os.path.join(cfg.paths.output_dir, '.hydra/config.yaml' )
+        # with open(hydra_config_path, 'w') as f:
+        #         yaml.dump(cfg, f)
         
         log.info(f"Importing model net {cfg.model_net._target_}")
         # can be passed as *args because all arguments are defined above, no argument defined in .yaml config file.
-        model_net : torch.nn.Module = hydra.utils.instantiate(cfg.model_net, **kwargs)
+        model_net : Module = hydra.utils.instantiate(cfg.model_net, **kwargs)
         
         log.info(f"Importing model  {cfg.model._target_}")
         model : SurrogateModule = hydra.utils.instantiate(cfg.model)
         # model.net cannot be instanciated in the config file because it depends on the dataset:
+        d= device('cuda' if cuda.is_available() else 'cpu')
         model.net = model_net
-        
+        model = model.to(d)
+
         log.info("Instantiating callbacks...")
         callbacks: List[Callback] = utils.instantiate_callbacks(cfg.get("callbacks"))
 
@@ -94,7 +97,7 @@ def main(cfg :  DictConfig):
         log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
         trainer: Trainer = hydra.utils.instantiate(cfg.trainer, callbacks=callbacks, logger=logger)
 
-        torch.set_float32_matmul_precision('medium')
+        set_float32_matmul_precision('medium')
         
         object_dict = {
                 "cfg": cfg,
@@ -111,13 +114,15 @@ def main(cfg :  DictConfig):
 
         if cfg.get("compile"):
                 log.info("Compiling model!")
-                model = torch.compile(model)
+                model = compile(model)
 
         if cfg.get("train"):
                 log.info("Starting training!")
                 trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"))
 
         train_metrics = trainer.callback_metrics
+
+        log.info("Training finished!")
 
         # return the metric to optimise for hyper parameter search
         return train_metrics['train/loss']
@@ -162,7 +167,12 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         ####
         # Scale 1D output data with scaler defined in hydra config file
         ####
-        y_train, y_test  = preprocess.output_scaler.scale_data(Y_train, Y_test)
+        if preprocess.output_scaler.donot_scale : 
+                y_train = Y_train
+                y_test = Y_test
+
+        else: 
+                y_train, y_test  = preprocess.output_scaler.scale_data(Y_train, Y_test)
 
         ####
         # Decompose x data with decomposition methode defined in hydra config file
@@ -189,4 +199,5 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         return x_train, y_train, x_test, y_test
 
 if __name__ == "__main__":
+    # get args from command line
     main()

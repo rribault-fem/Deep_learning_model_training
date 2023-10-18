@@ -1,3 +1,0 @@
-
-_target_ : torchydra_fem.model.components.ins2tens_time_series_conv1d.DenseIns2tens_time_series
-dropout_rate : 0.35

@@ -1,9 +1,8 @@
-import torch
-import numpy as np
+from torch.nn import Conv1d, ConvTranspose1d,  Module, Dropout, ReLU, GELU, LeakyReLU, BatchNorm1d, MaxPool1d, LSTM
 from torchinfo import summary
-import math
+import torch
 
-class DenseIns2tens_time_series(torch.nn.Module):
+class TimeSeriesToTimeSeriesConv1D(Module):
     """
     A PyTorch Lightning module representing a 1D convolutional neural network
     for regression from ins time series to statistics of tension sensor.
@@ -21,35 +20,51 @@ class DenseIns2tens_time_series(torch.nn.Module):
         torch.Tensor: A tensor representing the output of the convolutional neural network.
     """
     def __init__(self,
-                  **kwargs):
+                latent_space_dim:int=2**6, 
+                dropout_rate : float= 0.1, 
+                activation : str = 'nn.GELU', 
+                **kwargs):
         super().__init__()
         
         required_kwargs_list = ['two_dims_decomp_length', 'two_dims_channel_nb', 'nb_obs']
         for kwarg in required_kwargs_list:
             if kwarg not in kwargs:
                 raise ValueError(f"Missing required kwarg: {kwarg}")
+            
+        if dropout_rate is not None:
+            self.dropout =  Dropout(p=dropout_rate)
+
+        activation_dict = {
+            'nn.ReLU' : ReLU(),
+            'nn.LeakyReLU' : LeakyReLU(),
+            'nn.GELU' : GELU()
+        }
         
+        self.activ = activation_dict[activation]
+
         self.nb_obs : int = kwargs['nb_obs']
         self.two_dims_decomp_length : int = kwargs['two_dims_decomp_length']
         self.two_dims_channel_nb : int = kwargs['two_dims_channel_nb']
 
-        self.relu = torch.nn.ReLU()
-        self.tanh = torch.nn.Tanh()
+        self.activ = ReLU()
 
 
         # Architecture of the neural network
 
         # Several conv1D layers are used to condense the input data per channels to a lattent space
-        self.conv1 = torch.nn.Conv1d(self.two_dims_decomp_length, 512, kernel_size=3, stride=1, padding=1)
-        self.conv2 = torch.nn.Conv1d(512, 128, kernel_size=3, stride=1, padding=1)
-        self.conv3 = torch.nn.Conv1d(128, 64, kernel_size=3, stride=1, padding=1)
+        self.conv1 = Conv1d(3, 1, kernel_size=10, stride=2, padding=0)
+        self.MaxPool1d = MaxPool1d(kernel_size=2, stride=2, padding=0)
+        self.conv2 = Conv1d(1, 1, kernel_size=5, stride=2, padding=0)
+        self.conv3 = Conv1d(1, 1, kernel_size=3, stride=2, padding=0)
 
         # The lattent space is transformed to a 1D tensor shape using a dense layer
-        self.convT1 = torch.nn.ConvTranspose1d(64, 128, kernel_size=3, stride=1, padding=1)
-        self.convT2 = torch.nn.ConvTranspose1d(128, 512, kernel_size=3, stride=1, padding=1)
-        self.convT3 = torch.nn.ConvTranspose1d(512, self.two_dims_decomp_length, kernel_size=3, stride=1, padding=1) 
+        self.convT1 = ConvTranspose1d(1, 1, kernel_size=3, stride=2, padding=0)
+        self.convT2 = ConvTranspose1d(1, 1, kernel_size=5, stride=2, padding=0)
+        self.convT3 = ConvTranspose1d(1, 1, kernel_size=10, stride=2, padding=0)
 
-        self.conv_chan = torch.nn.Conv1d(self.two_dims_channel_nb, 1, kernel_size=3, stride=1, padding=1)
+        self.LSTM = LSTM(input_size=2394, hidden_size=5, num_layers=1, batch_first=True)
+
+        # self.conv_chan = Conv1d(self.two_dims_channel_nb, 1, kernel_size=3, stride=1, padding=1)
 
         summary(self, input_size=(self.nb_obs, self.two_dims_decomp_length, self.two_dims_channel_nb))     
 
@@ -65,21 +80,38 @@ class DenseIns2tens_time_series(torch.nn.Module):
         """
         # reshape the input tensor in chuncks on the second dimension
         #x = x.view(self.nb_obs*self.two_dims_decomp_length, self.two_dims_channel_nb)
+        x = x.permute(0, 2, 1)
         x = self.conv1(x)
-        x = self.relu(x)
+        # x = self.MaxPool1d(x)
+        # x = BatchNorm1d(512)(x)
+        x = self.dropout(self.activ(x))
         x = self.conv2(x)
-        x = self.relu(x)
+        # x = self.MaxPool1d(x)
+        # x = BatchNorm1d(128)(x)
+        x = self.dropout(self.activ(x))
         x = self.conv3(x)
-        x = self.relu(x)
+        # x = self.MaxPool1d(x)
+        x = self.activ(x)
+
+
+        # x = x.permute(0, 2, 1)
+        # x = self.conv_chan(x)
+        # x = x.permute(0, 2, 1)
+
         x = self.convT1(x)
-        x = self.relu(x)
+        # x = BatchNorm1d(128)(x)
+        x = self.dropout(self.activ(x))
         x = self.convT2(x)
-        x = self.relu(x)
+        # x = BatchNorm1d(512)(x)
+        x = self.dropout(self.activ(x))
         x = self.convT3(x)
-        x = self.relu(x)
+        x = self.activ(x)
+        x_last= x.squeeze(1)
+        x_last, _ = self.LSTM(x_last)
+        x_last = x_last.unsqueeze(1)
+        x = torch.concatenate((x, x_last), dim=2)
         x = x.permute(0, 2, 1)
-        x = self.conv_chan(x)
-        x = x.permute(0, 2, 1)
+
 
         return x
     
@@ -87,8 +119,8 @@ if __name__ == '__main__':
     # Test the model
     kwargs = {
         "nb_obs" : 30,
-        "two_dims_decomp_length" : 600,
+        "two_dims_decomp_length" : 2399,
         "two_dims_channel_nb" : 3}
 
-    model = DenseIns2tens_time_series( 
+    model = TimeSeriesToTimeSeriesConv1D( 
     **kwargs)

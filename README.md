@@ -183,6 +183,8 @@ python src/train.py trainer.max_epochs=20 data.batch_size=64
 Search for best hyperparameters with [Optuna](https://optuna.org/)
 
 ```bash
+pip install hydra-core --upgrade
+pip install hydra-optuna-sweeper --upgrade
 python src/train.py -m hparams_search=optuna
 ```
 python src/train.py -m hparams_search=optuna
