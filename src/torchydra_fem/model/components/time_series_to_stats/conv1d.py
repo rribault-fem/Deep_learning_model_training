@@ -20,7 +20,7 @@ class TimeSeriesToStatsConv1d(Module):
     """
     def __init__(self,
                 latent_space_dim:int=2**6, 
-                dropout_rate : float= 0.1, 
+                dropout_rate : float= 0.3, 
                 activation : str = 'nn.GELU', 
                 **kwargs):
         super().__init__()
@@ -40,7 +40,7 @@ class TimeSeriesToStatsConv1d(Module):
         }
         
         self.activ = activation_dict[activation]
-
+        self.latent_space_dim = latent_space_dim
         self.nb_obs : int = kwargs['nb_obs']
         self.two_dims_decomp_length : int = kwargs['two_dims_decomp_length']
         self.two_dims_channel_nb : int = kwargs['two_dims_channel_nb']
@@ -51,14 +51,15 @@ class TimeSeriesToStatsConv1d(Module):
         # Architecture of the neural network
 
         # Several conv1D layers are used to condense the input data per channels to a lattent space
-        self.Conv1d_1 = Conv1d(3, 1, kernel_size=10, stride=2, padding=0)
-        self.Conv1d_2 = Conv1d(1, 1, kernel_size=5, stride=2, padding=0)
-        self.Conv1d_3 = Conv1d(1, 1, kernel_size=3, stride=2, padding=0)
+        self.Conv1d_1 = Conv1d(3, 32, kernel_size=1, stride=1, padding=0)
+        self.Conv1d_2 = Conv1d(32, 128, kernel_size=1, stride=1, padding=0)
+        self.Conv1d_3 = Conv1d(128, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
+        self.Conv1d_4 = Conv1d(self.two_dims_decomp_length, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
 
         # The convolutionnal layers are followed by a dense layer
-        self.dense = Linear(72, 4)
+        self.dense1 = Linear(self.latent_space_dim, 1)
+        self.dense2 = Linear(self.latent_space_dim, 4)
 
-        self.conv_chan = Conv1d(self.two_dims_channel_nb, 1, kernel_size=3, stride=1, padding=1)
 
         summary(self, input_size=(self.nb_obs, self.two_dims_decomp_length, self.two_dims_channel_nb))     
 
@@ -78,14 +79,22 @@ class TimeSeriesToStatsConv1d(Module):
         x = self.Conv1d_1(x)
         # x = BatchNorm1d(512)(x)
         x = self.dropout(self.activ(x))
+        # x = x.permute(0, 2, 1)
         x = self.Conv1d_2(x)
         # x = BatchNorm1d(128)(x)
         x = self.dropout(self.activ(x))
         x = self.Conv1d_3(x)
-        x = self.activ(x)
-        x = self.dense(x)
+        x = self.dropout(self.activ(x))
         x = x.permute(0, 2, 1)
-
+        x = self.Conv1d_4(x)
+        x = self.dropout(self.activ(x))
+        # x = self.activ(x)
+        # x = x.permute(0, 2, 1)
+        x = self.dense1(x)
+        x = x.permute(0, 2, 1)
+        x = self.dense2(x)
+        x = x.permute(0, 2, 1)
+        
         return x
     
 if __name__ == '__main__':

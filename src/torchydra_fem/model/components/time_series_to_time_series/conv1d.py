@@ -20,7 +20,7 @@ class TimeSeriesToTimeSeriesConv1D(Module):
         torch.Tensor: A tensor representing the output of the convolutional neural network.
     """
     def __init__(self,
-                latent_space_dim:int=2**6, 
+                latent_space_dim:int=2**8, 
                 dropout_rate : float= 0.1, 
                 activation : str = 'nn.GELU', 
                 **kwargs):
@@ -41,6 +41,7 @@ class TimeSeriesToTimeSeriesConv1D(Module):
         }
         
         self.activ = activation_dict[activation]
+        self.latent_space_dim = latent_space_dim
 
         self.nb_obs : int = kwargs['nb_obs']
         self.two_dims_decomp_length : int = kwargs['two_dims_decomp_length']
@@ -52,17 +53,16 @@ class TimeSeriesToTimeSeriesConv1D(Module):
         # Architecture of the neural network
 
         # Several conv1D layers are used to condense the input data per channels to a lattent space
-        self.conv1 = Conv1d(3, 1, kernel_size=10, stride=2, padding=0)
-        self.MaxPool1d = MaxPool1d(kernel_size=2, stride=2, padding=0)
-        self.conv2 = Conv1d(1, 1, kernel_size=5, stride=2, padding=0)
-        self.conv3 = Conv1d(1, 1, kernel_size=3, stride=2, padding=0)
+        self.conv1 = Conv1d(3, 32, kernel_size=1, stride=1, padding=0)
+        self.conv2 = Conv1d(32, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
+        self.conv3 = Conv1d(self.latent_space_dim, 1, kernel_size=1, stride=1, padding=0)
 
         # The lattent space is transformed to a 1D tensor shape using a dense layer
-        self.convT1 = ConvTranspose1d(1, 1, kernel_size=3, stride=2, padding=0)
-        self.convT2 = ConvTranspose1d(1, 1, kernel_size=5, stride=2, padding=0)
-        self.convT3 = ConvTranspose1d(1, 1, kernel_size=10, stride=2, padding=0)
+        # self.convT1 = ConvTranspose1d(1, 1, kernel_size=2, stride=2, padding=0)
+        # self.convT2 = ConvTranspose1d(1, 1, kernel_size=2, stride=2, padding=0)
+        # self.convT3 = ConvTranspose1d(1, 1, kernel_size=2, stride=2, padding=0)
 
-        self.LSTM = LSTM(input_size=2394, hidden_size=5, num_layers=1, batch_first=True)
+        # self.LSTM = LSTM(input_size=2392, hidden_size=5, num_layers=1, batch_first=True)
 
         # self.conv_chan = Conv1d(self.two_dims_channel_nb, 1, kernel_size=3, stride=1, padding=1)
 
@@ -98,18 +98,18 @@ class TimeSeriesToTimeSeriesConv1D(Module):
         # x = self.conv_chan(x)
         # x = x.permute(0, 2, 1)
 
-        x = self.convT1(x)
-        # x = BatchNorm1d(128)(x)
-        x = self.dropout(self.activ(x))
-        x = self.convT2(x)
-        # x = BatchNorm1d(512)(x)
-        x = self.dropout(self.activ(x))
-        x = self.convT3(x)
-        x = self.activ(x)
-        x_last= x.squeeze(1)
-        x_last, _ = self.LSTM(x_last)
-        x_last = x_last.unsqueeze(1)
-        x = torch.concatenate((x, x_last), dim=2)
+        # x = self.convT1(x)
+        # # x = BatchNorm1d(128)(x)
+        # x = self.dropout(self.activ(x))
+        # x = self.convT2(x)
+        # # x = BatchNorm1d(512)(x)
+        # x = self.dropout(self.activ(x))
+        # x = self.convT3(x)
+        # x = self.activ(x)
+        # x_last= x.squeeze(1)
+        # x_last, _ = self.LSTM(x_last)
+        # x_last = x_last.unsqueeze(1)
+        # x = torch.concatenate((x, x_last), dim=2)
         x = x.permute(0, 2, 1)
 
 

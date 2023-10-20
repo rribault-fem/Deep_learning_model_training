@@ -23,7 +23,7 @@ import torchydra_fem.utils as utils
 
 
 # version_base=1.1 is used to make hydra change the current working directory to the hydra output path
-@hydra.main(config_path="../../../../configs", config_name="train ins2tension_ts.yaml", version_base="1.3")
+@hydra.main(config_path="../../../../configs", config_name="monabiop_conv1d.yaml", version_base="1.3")
 def main(cfg :  DictConfig):
         """
         This function serves as the main entry point for the script.
@@ -149,6 +149,13 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         #Start pipeline
         ####
         df = xr.open_dataset(cfg.paths.dataset)
+        variable_list = preprocess.inputs_outputs.input_variables + preprocess.inputs_outputs.output_variables
+        coordinate_list = list(df.coords)
+
+        not_drop_list = coordinate_list + variable_list
+        
+        # drop all variables not in variable_list
+        df = df.drop_vars([ var for var in df.variables if var not in not_drop_list] )
         df = df.dropna(dim='time', how='any')
 
         preprocess.unit_dictionnary = {}
@@ -164,6 +171,10 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
                                                                         X_channel_list=preprocess.inputs_outputs.input_variables,
                                                                         Y_channel_list=preprocess.inputs_outputs.output_variables,
                                                                         df_train_set_envir_filename=cfg.paths.training_env_dataset)
+        
+        # drop nan on training & test sets
+
+
         ####
         # Scale 1D output data with scaler defined in hydra config file
         ####

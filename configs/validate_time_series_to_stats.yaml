@@ -11,7 +11,7 @@ task_name: "infer_time_series_to_stats"
 tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
-experiment_folder: outputs\time_series_to_stats\runs\2023-10-10_19-48-34
+experiment_folder: outputs\Monabiop\time_series_to_stats\conv1d\runs\2023-10-20_13-20-50
 
 
 # location of envir files for inference and for storing the model inference results. 

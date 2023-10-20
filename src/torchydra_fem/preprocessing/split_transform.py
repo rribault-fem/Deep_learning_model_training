@@ -34,8 +34,8 @@ class Split_transform :
     cut_low_frequency : float
     train_set_start_date : Optional[str] = None # format : '2023-06-20 13'
     train_set_end_date : Optional[str] = None   # format : '2023-06-20 13'
-    test_set_start_date : Optional[str] = None # format : '2023-06-20 13'
-    test_set_end_date : Optional[str] = None   # format : '2023-06-20 13'
+    val_set_start_date : Optional[str] = None # format : '2023-06-20 13'
+    val_set_end_date : Optional[str] = None   # format : '2023-06-20 13'
 
     def process_data(self, df : xr.Dataset, X_channel_list : List[str], Y_channel_list : List[str], df_train_set_envir_filename: str ) -> Tuple[np.array, np.array]:
         """
@@ -69,6 +69,8 @@ class Split_transform :
         X_train, X_test, Y_train, Y_test = self.transform_train_test_xr_dataset_to_numpy(df_training_set, df_test_set,  X_channel_list = X_channel_list, Y_channel_list = Y_channel_list)
         log.info('data transformed to np.array')
         log.info('###')
+
+        
 
         return  X_train, X_test, Y_train, Y_test
     
@@ -267,11 +269,13 @@ class Split_transform :
         log.info('#####')
         df_training_set = df.sel(time=slice(self.train_set_start_date, self.train_set_end_date))
         # for test set, remove all dates in june
-        df_test_set = df.sel(time=slice(self.test_set_start_date, self.test_set_end_date))
-        return df_training_set, df_test_set
+        df_val_set = df.sel(time=slice(self.val_set_start_date, self.val_set_end_date))
+
+
+        return df_training_set, df_val_set
     
-    def get_numpy_input_1D_set(self, df, envir_variables) :
-        # loading channels data in numpy for CNN 
+    def get_numpy_input_1D_set(self, df, envir_variables) :     
+        # loading channels data in numpy for neural network 
         log = logging.getLogger(os.environ['logger_name'])
         input_envir_set = np.empty_like(np.expand_dims(df[envir_variables[0]].values, axis = 1))
         for env_var in envir_variables :

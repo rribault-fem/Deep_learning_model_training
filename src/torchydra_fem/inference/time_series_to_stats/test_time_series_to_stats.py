@@ -16,7 +16,7 @@ import torchydra_fem.utils as utils
 from torchydra_fem.Preprocessing import Preprocessing
 from torchydra_fem.model.surrogate_module import SurrogateModule
 
-@hydra.main(version_base="1.3", config_path="../../../../configs", config_name="validate_time_series_to_stats.yaml")
+@hydra.main(version_base="1.3", config_path="../../../../configs", config_name="test_time_series_to_stats.yaml")
 def main(cfg: DictConfig) -> None:
     # apply extra utilities
     # (e.g. ask for tags if none are provided in cfg, print cfg tree, etc.)
@@ -44,7 +44,7 @@ def inference(cfg : DictConfig):
 
     inference_dataset_path = os.path.join(cfg.paths.dataset)
     infer_dataset = xr.open_dataset(inference_dataset_path)
-    infer_dataset = infer_dataset.sel(time = slice('2023-06-20 13', '2023-06-21-14'))
+    infer_dataset = infer_dataset.sel(time = slice('2023-06-20 13', '2023-06-30-14'))
 
     # load preprocessing pipeline
     # Use of pickle object to load the scaler already fit to the data
@@ -62,7 +62,7 @@ def inference(cfg : DictConfig):
     Y = preprocess.split_transform.get_numpy_input_2D_set(df, Y_channel_list)
     
     x_infer = preprocess.input_scaler.scale_data_infer(X_infer)
-    y_val = preprocess.output_scaler.scale_data_infer(Y)
+    y_test = preprocess.output_scaler.scale_data_infer(Y)
 
     # load model
     hydra_config_path = os.path.join(EXPERIMENT_PATH, r'.hydra/config.yaml' )
@@ -73,7 +73,7 @@ def inference(cfg : DictConfig):
     datamodule : LightningDataModule = hydra.utils.instantiate(hydra_config['data'])
 
     # setup x_infer to datamodule for model evaluation
-    datamodule.setup(stage='validate', x_test=x_infer, y_test=y_val)
+    datamodule.setup(stage='test', x_test=x_infer, y_test=y_test)
     
     if hydra_config['preprocessing']['perform_decomp'] == True:
         decomp_length = 24
@@ -117,22 +117,26 @@ def inference(cfg : DictConfig):
     
 
     # unscale y_hat
-    # if preprocess.output_scaler.donot_scale :
-    #     Y_hat : np.array = y_hat
-    # else: Y_hat: np.array = preprocess.output_scaler.inverse_transform_data_infer(y_hat)
-
+    if preprocess.output_scaler.donot_scale :
+        Y_hat : np.array = y_hat
+        Y_test = Y
+    else: 
+        Y_hat: np.array = preprocess.output_scaler.inverse_transform_data_infer(y_hat)
+        Y_test = preprocess.output_scaler.inverse_transform_data_infer(y_test)
+    
     # reshape Y_hat and Y to be able to save them in a netcdf file
     y_hat = y_hat.reshape(-1, 60, 4)
 
-    y_val= datamodule.y_val.detach().cpu().numpy()
-    y_val = y_val.reshape(-1, 60, 4)
+    y_test= datamodule.y_test.detach().cpu().numpy()
+    y_test = y_test.reshape(-1, 60, 4)
 
     variables = ['max', 'min', 'mean', 'std']
     minutes = np.arange(0,60,1)
 
+
     for var_name in variables :
-        array_NN = prepare_new_array_NN(y_hat[:, :, variables.index(var_name)], var_name)
-        array_val = prepare_new_array_val(y_val[:, :, variables.index(var_name)], var_name)
+        array_NN = prepare_new_array_NN(Y_hat[:, :, variables.index(var_name)], var_name)
+        array_val = prepare_new_array_val(Y_test[:, :, variables.index(var_name)], var_name)
         infer_dataset['NNet_tension_'+var_name] = array_NN
         infer_dataset['tension_sensor'+var_name] = array_val
 

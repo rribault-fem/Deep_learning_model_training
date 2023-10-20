@@ -79,7 +79,7 @@ class SurrogateDataModule(LightningDataModule):
         if stage == "evaluate" :
             self.x_eval = self._shift_reshape_data(x_test)
 
-        if stage == "validate" :
+        if stage == "test" :
             self.x_val, self.y_val = self._shift_reshape_data(x_test, y_test)
 
         if stage == "train" or stage == "fit" and stage is None and x_train and y_train and x_test and y_test:
@@ -99,7 +99,6 @@ class SurrogateDataModule(LightningDataModule):
         "function to apply after model prediction to undo the shift and reshape tensors"
         
         x = x.reshape(-1, 36000-abs(self.step_diff_y_x), np.shape(x)[-1])
-        
         if self.step_diff_y_x !=0:
             x_add = np.zeros((np.shape(x)[0], abs(self.step_diff_y_x), np.shape(x)[-1]))
             x = np.concatenate((x, x_add), axis=1)

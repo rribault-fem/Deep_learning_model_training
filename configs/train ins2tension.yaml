@@ -25,7 +25,7 @@ defaults:
   - hparams_search: null
 
 
-task_name: "train_ins2tension"        # task name, determines output directory path
+task_name: "Monabiop//time_series_to_stats//conv1d"       # task name, determines output directory path
 
 # tags to help you identify your experiments
 # you can overwrite this in experiment configs

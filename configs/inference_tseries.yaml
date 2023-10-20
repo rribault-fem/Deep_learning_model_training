@@ -11,7 +11,7 @@ task_name: "infer_ins2tension"
 tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
-experiment_folder: outputs\train_ins2tension\runs\2023-10-09_20-51-21
+experiment_folder: outputs\Monabiop\time_series_to_time_series\conv1d\runs\2023-10-20_14-54-10
 
 # location of envir files for inference and for storing the model inference results. 
 save_path: ${paths.data_dir}/inferences/${task_name}

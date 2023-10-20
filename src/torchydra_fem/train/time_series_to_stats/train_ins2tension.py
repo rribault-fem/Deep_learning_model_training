@@ -19,7 +19,7 @@ from torchydra_fem.Preprocessing import Preprocessing
 from torchydra_fem.model.surrogate_module import SurrogateModule
 
 # version_base=1.1 is used to make hydra change the current working directory to the hydra output path
-@hydra.main(config_path="../configs", config_name="time_series_to_stats.yaml", version_base="1.3")
+@hydra.main(config_path="../../../../configs", config_name="train time_series_to_stats.yaml", version_base="1.3")
 def main(cfg :  DictConfig):
         """
         This function serves as the main entry point for the script.
@@ -47,7 +47,7 @@ def main(cfg :  DictConfig):
         preprocess: Preprocessing = hydra.utils.instantiate(cfg.preprocessing)
         
         # Pre-process data
-        x_train, y_train, x_test, y_test = Pre_process_data(cfg, preprocess)
+        x_train, y_train, x_val, y_val = Pre_process_data(cfg, preprocess)
         
         # save the pipeline for future use and inverse transform
         log.info("Saving preprocessing")
@@ -61,17 +61,17 @@ def main(cfg :  DictConfig):
         kwargs = {
                 "x_train" : x_train,
                 "y_train" : y_train,
-                "x_test" : x_test,
-                "y_test" : y_test}
+                "x_test" : x_val,
+                "y_test" : y_val}
         
         log.info(f"Instantiating datamodule <{cfg.data._target_}>")
         datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data, **kwargs)
-
+        datamodule.setup(stage='train', x_train=x_train, y_train=y_train, x_test=x_val, y_test=y_val)
         # instanciate model. Parameters depending on dataset are passed as kwargs.
         kwargs = {
-                "y_output_size" : y_output_size,
-                "two_dims_decomp_length" : two_dims_decomp_length,
-                "two_dims_channel_nb" : two_dims_channel_nb}
+                "nb_obs" : datamodule.shape_x[0],
+                "two_dims_decomp_length" : datamodule.shape_x[1],
+                "two_dims_channel_nb" : datamodule.shape_x[2]}
         
         # save kwargs to hydra config
         
@@ -145,6 +145,14 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         #Start pipeline
         ####
         df = xr.open_dataset(cfg.paths.dataset)
+        variable_list = preprocess.inputs_outputs.input_variables + preprocess.inputs_outputs.output_variables
+        coordinate_list = list(df.coords)
+        not_drop_list = coordinate_list + variable_list
+        
+        # drop all variables not in variable_list
+        df = df.drop_vars([ var for var in df.variables if var not in not_drop_list] )
+
+        # drop nan on variables of interrest
         df = df.dropna(dim='time', how='any')
 
         preprocess.unit_dictionnary = {}
@@ -163,7 +171,11 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         ####
         # Scale 1D output data with scaler defined in hydra config file
         ####
-        y_train, y_test  = preprocess.input_scaler.scale_data(Y_train, Y_test)
+        if preprocess.output_scaler.donot_scale : 
+                y_train = Y_train
+                y_test = Y_test
+
+        else : y_train, y_test  = preprocess.output_scaler.scale_data(Y_train, Y_test)
 
         ####
         # Decompose x data with decomposition methode defined in hydra config file
@@ -174,7 +186,7 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         ####
         # Scale 2D data with scaler defined in hydra config file
         ####
-        x_train, x_test = preprocess.output_scaler.scale_data(X_train, X_test)
+        x_train, x_test = preprocess.input_scaler.scale_data(X_train, X_test)
 
         ####
         # Shuffle training data

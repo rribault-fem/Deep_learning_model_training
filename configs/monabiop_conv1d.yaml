@@ -6,14 +6,14 @@ _target_: torchydra_fem.Preprocessing.Preprocessing
 
 defaults:
   - _self_
-  - preprocessing: default.yaml
+  - preprocessing: ins2tension_ts.yaml
   - paths: ins2tension_monabiop.yaml
   - model : surrogate_module.yaml
-  - model_net : conv1d_surr.yaml
+  - model_net : time_series_to_time_series/conv1d.yaml
   - trainer: gpu.yaml
   - callbacks : default.yaml
-  - logger: many_loggers.yaml
-  - data : surrogate.yaml
+  - logger: tensorboard.yaml
+  - data : ins2tens_time_series.yaml
   - extras: default.yaml
   - hydra: default.yaml
 
@@ -24,13 +24,12 @@ defaults:
   # config for hyperparameter optimization
   - hparams_search: null
 
-
-task_name: "train_surrogate"        # task name, determines output directory path
+task_name: "Monabiop//time_series_to_time_series//conv1d"        # task name, determines output directory path
 
 # tags to help you identify your experiments
 # you can overwrite this in experiment configs
 # overwrite from command line with `python train.py tags="[first_tag, second_tag]"`
-tags: ["dev"]
+tags: ["first_test"]
 
 # set False to skip model training
 train: True
