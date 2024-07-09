@@ -21,7 +21,9 @@ class TimeSeriesToStatsConv1d(Module):
     def __init__(self,
                 latent_space_dim:int=2**6, 
                 dropout_rate : float= 0.3, 
-                activation : str = 'nn.GELU', 
+                activation : str = 'nn.GELU',
+                active_dense : bool = True,
+                batch_norm : bool = True, 
                 **kwargs):
         super().__init__()
         
@@ -38,23 +40,26 @@ class TimeSeriesToStatsConv1d(Module):
             'nn.LeakyReLU' : LeakyReLU(),
             'nn.GELU' : GELU()
         }
-        
+        self.active_dense = active_dense
+        self.batch_norm = batch_norm
         self.activ = activation_dict[activation]
         self.latent_space_dim = latent_space_dim
         self.nb_obs : int = kwargs['nb_obs']
         self.two_dims_decomp_length : int = kwargs['two_dims_decomp_length']
         self.two_dims_channel_nb : int = kwargs['two_dims_channel_nb']
 
-        self.activ = ReLU()
-
 
         # Architecture of the neural network
 
         # Several conv1D layers are used to condense the input data per channels to a lattent space
-        self.Conv1d_1 = Conv1d(3, 32, kernel_size=1, stride=1, padding=0)
-        self.Conv1d_2 = Conv1d(32, 128, kernel_size=1, stride=1, padding=0)
-        self.Conv1d_3 = Conv1d(128, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
+        self.Conv1d_1 = Conv1d(6, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
+        self.Conv1d_2 = Conv1d(self.latent_space_dim, self.latent_space_dim*2, kernel_size=1, stride=1, padding=0)
+        self.Conv1d_3 = Conv1d(self.latent_space_dim*2, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
         self.Conv1d_4 = Conv1d(self.two_dims_decomp_length, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
+        
+        self.BatchNorm1d1 =  BatchNorm1d(self.latent_space_dim)
+        self.BatchNorm1d2 = BatchNorm1d(self.latent_space_dim*2)
+        self.BatchNorm1d3 = BatchNorm1d(self.latent_space_dim)
 
         # The convolutionnal layers are followed by a dense layer
         self.dense1 = Linear(self.latent_space_dim, 1)
@@ -77,22 +82,33 @@ class TimeSeriesToStatsConv1d(Module):
         #x = x.view(self.nb_obs*self.two_dims_decomp_length, self.two_dims_channel_nb)
         x = x.permute(0, 2, 1)
         x = self.Conv1d_1(x)
-        # x = BatchNorm1d(512)(x)
+        if self.batch_norm :
+            x = self.BatchNorm1d1(x)
         x = self.dropout(self.activ(x))
-        # x = x.permute(0, 2, 1)
+
         x = self.Conv1d_2(x)
-        # x = BatchNorm1d(128)(x)
+        if self.batch_norm :
+            x = self.BatchNorm1d2(x)
         x = self.dropout(self.activ(x))
+
         x = self.Conv1d_3(x)
+        if self.batch_norm :
+            x = self.BatchNorm1d3(x)
         x = self.dropout(self.activ(x))
+
         x = x.permute(0, 2, 1)
         x = self.Conv1d_4(x)
+        if self.batch_norm :
+            x = self.BatchNorm1d3(x)
         x = self.dropout(self.activ(x))
-        # x = self.activ(x)
-        # x = x.permute(0, 2, 1)
+
         x = self.dense1(x)
+        if self.active_dense :
+            x = self.activ(x)
         x = x.permute(0, 2, 1)
         x = self.dense2(x)
+        if self.active_dense :
+            x = self.activ(x)
         x = x.permute(0, 2, 1)
         
         return x
@@ -102,7 +118,7 @@ if __name__ == '__main__':
     kwargs = {
         "nb_obs" : 3270,
         "two_dims_decomp_length" : 600,
-        "two_dims_channel_nb" : 3}
+        "two_dims_channel_nb" : 6}
 
     model = TimeSeriesToStatsConv1d( 
     **kwargs)

@@ -3,13 +3,13 @@ _target_: lightning.pytorch.trainer.Trainer
 default_root_dir: ${paths.output_dir}
 
 min_epochs: 1 # prevents early stopping
-max_epochs: 10
+max_epochs: 30
 
 accelerator: auto
 devices: auto
 
 # mixed precision for extra speed-up
-# precision: 16
+precision: 16-mixed
 
 # perform a validation loop every N training epochs
 check_val_every_n_epoch: 1
@@ -18,4 +18,4 @@ check_val_every_n_epoch: 1
 # makes training slower but gives more reproducibility than just setting seeds
 deterministic: False
 
-profiler: simple
+# profiler: simple

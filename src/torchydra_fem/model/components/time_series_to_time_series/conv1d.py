@@ -53,7 +53,7 @@ class TimeSeriesToTimeSeriesConv1D(Module):
         # Architecture of the neural network
 
         # Several conv1D layers are used to condense the input data per channels to a lattent space
-        self.conv1 = Conv1d(3, 32, kernel_size=1, stride=1, padding=0)
+        self.conv1 = Conv1d(6, 32, kernel_size=1, stride=1, padding=0)
         self.conv2 = Conv1d(32, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
         self.conv3 = Conv1d(self.latent_space_dim, 1, kernel_size=1, stride=1, padding=0)
 
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     kwargs = {
         "nb_obs" : 30,
         "two_dims_decomp_length" : 2399,
-        "two_dims_channel_nb" : 3}
+        "two_dims_channel_nb" : 6}
 
     model = TimeSeriesToTimeSeriesConv1D( 
     **kwargs)

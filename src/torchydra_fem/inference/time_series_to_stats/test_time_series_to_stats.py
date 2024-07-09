@@ -62,7 +62,11 @@ def inference(cfg : DictConfig):
     Y = preprocess.split_transform.get_numpy_input_2D_set(df, Y_channel_list)
     
     x_infer = preprocess.input_scaler.scale_data_infer(X_infer)
-    y_test = preprocess.output_scaler.scale_data_infer(Y)
+    
+    # unscale y_hat
+    if preprocess.output_scaler.donot_scale :
+        y_test = Y
+    else : y_test = preprocess.output_scaler.scale_data_infer(Y)
 
     # load model
     hydra_config_path = os.path.join(EXPERIMENT_PATH, r'.hydra/config.yaml' )
@@ -103,15 +107,21 @@ def inference(cfg : DictConfig):
         model = model.to(device)
         x_infer = x_infer.to(device)
         model.eval()
-        y_hat = model(x_infer)
+        # perform montecarlo uncertainty prediction thanks to dropout
+        # y_hat = model(x_infer)
         
-        
-        return y_hat
+        # take average of `self.mc_iteration` iterations
+        pred = [model(x_infer) for _ in range(10)]
+        pred_mean = torch.vstack(pred).mean(dim=0)
+        pred_max = torch.vstack(pred).max(dim=0)
+        pred_min = torch.vstack(pred).min(dim=0)
+        return pred_min, pred_mean, pred_max
+
     
     log = logging.getLogger(os.environ['logger_name'])
     log.info('Perform model predictions')
 
-    y_hat = model_predict(datamodule.x_val, model)
+    pred_min, pred_mean, pred_max = model_predict(datamodule.x_test, model)
     y_hat = y_hat.detach().cpu().numpy()
     # y_hat = datamodule._undo_shift_reshape_data(y_hat)
     
@@ -119,16 +129,14 @@ def inference(cfg : DictConfig):
     # unscale y_hat
     if preprocess.output_scaler.donot_scale :
         Y_hat : np.array = y_hat
-        Y_test = Y
+        Y_hat = Y_hat.reshape(-1, 60, 4)
+        Y_test= datamodule.y_test.detach().cpu().numpy()
+        Y_test = Y_test.reshape(-1, 60, 4)
     else: 
+        # Do not work yet. TO be implemented : 
         Y_hat: np.array = preprocess.output_scaler.inverse_transform_data_infer(y_hat)
         Y_test = preprocess.output_scaler.inverse_transform_data_infer(y_test)
     
-    # reshape Y_hat and Y to be able to save them in a netcdf file
-    y_hat = y_hat.reshape(-1, 60, 4)
-
-    y_test= datamodule.y_test.detach().cpu().numpy()
-    y_test = y_test.reshape(-1, 60, 4)
 
     variables = ['max', 'min', 'mean', 'std']
     minutes = np.arange(0,60,1)

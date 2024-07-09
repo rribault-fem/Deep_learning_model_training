@@ -2,6 +2,9 @@ input_variables:
   - x
   - y
   - z
+  - roll
+  - pitch
+  - yaw
 
 output_variables:
   - tension_axiale_line_B

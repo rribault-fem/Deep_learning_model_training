@@ -35,7 +35,7 @@ class SurrogateModule(LightningModule):
 
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
-        self.save_hyperparameters(logger=False)
+        self.save_hyperparameters(logger=False, ignore=['net', 'val_loss', 'train_loss', 'criterion', 'test_loss'])
 
         self.net = net
         
@@ -76,11 +76,11 @@ class SurrogateModule(LightningModule):
 
         # update and log metrics
         self.train_loss.update(loss)
-        self.train_mse(preds, targets)
+        # self.train_mse(preds, targets)
 
         # log metrics for the logger (default with tensorboard)
         self.log("train/loss", self.train_loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.log("train/mse", self.train_mse, on_step=True, on_epoch=True, prog_bar=True)
+        # self.log("train/mse", self.train_mse, on_step=True, on_epoch=True, prog_bar=True)
         
 
         # return loss or backpropagation will fail
@@ -94,10 +94,10 @@ class SurrogateModule(LightningModule):
 
         # update and log metrics
         self.val_loss.update(loss)
-        self.val_mse(preds, targets)
+        # self.val_mse(preds, targets)
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val/mse", self.val_mse, on_step=False, on_epoch=True, prog_bar=True)
-        self.log('hp_metric', self.val_loss)
+        # self.log("val/mse", self.val_mse, on_step=False, on_epoch=True, prog_bar=True)
+        # self.log('hp_metric', self.val_loss)
 
     def on_validation_epoch_end(self):
         pass

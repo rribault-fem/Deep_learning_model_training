@@ -161,6 +161,9 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         for var in preprocess.inputs_outputs.output_variables :
                 preprocess.unit_dictionnary[var] = 'kN'
         
+        angles = preprocess.feature_eng.angles
+        df = preprocess.feature_eng.get_cos_sin_from_angle(angles, df)
+
         ####
         # Split data into train and test sets. 
         ####

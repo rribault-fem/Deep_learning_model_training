@@ -2,3 +2,5 @@ _target_ : torchydra_fem.model.components.time_series_to_stats.conv1d.TimeSeries
 dropout_rate : 0.35
 latent_space_dim: 16
 activation: nn.GELU
+active_dense : False
+batch_norm : False

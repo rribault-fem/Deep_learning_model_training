@@ -9,10 +9,11 @@ defaults :
 
 feature_eng : 
   _target_ : torchydra_fem.preprocessing.feature_eng.FeatureEng      
-  sin_cos_method: get_cos_sin_decomposition           # Name of the method to use for the feature engineering (cf.py file) : current option available
-  envir_direction_dict:
-    mag10: theta10
-    hs: dp
+  sin_cos_method: get_cos_sin_from_angle           # Name of the method to use for the feature engineering (cf.py file) : current option available
+  angles :                                           # Environmental direction dictionary
+    - roll
+    - pitch
+    - yaw
 split_transform : 
   _target_ : torchydra_fem.preprocessing.split_transform.Split_transform 
   test_nb : 1000                                          # Number of test samples and clusters
@@ -25,7 +26,7 @@ split_transform :
     dp: 45
     mag10: 2
     theta10: 45
-  train_set_start_date : '2023-02-19 00'
+  train_set_start_date : '2023-04-01 00'
   train_set_end_date : '2023-06-20 12'
   val_set_start_date : '2023-07-05 13'
   val_set_end_date : '2023-07-06 20'
