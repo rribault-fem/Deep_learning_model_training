@@ -52,7 +52,7 @@ class TimeSeriesToStatsConv1d(Module):
         # Architecture of the neural network
 
         # Several conv1D layers are used to condense the input data per channels to a lattent space
-        self.Conv1d_1 = Conv1d(6, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
+        self.Conv1d_1 = Conv1d(12, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
         self.Conv1d_2 = Conv1d(self.latent_space_dim, self.latent_space_dim*2, kernel_size=1, stride=1, padding=0)
         self.Conv1d_3 = Conv1d(self.latent_space_dim*2, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
         self.Conv1d_4 = Conv1d(self.two_dims_decomp_length, self.latent_space_dim, kernel_size=1, stride=1, padding=0)
@@ -63,7 +63,7 @@ class TimeSeriesToStatsConv1d(Module):
 
         # The convolutionnal layers are followed by a dense layer
         self.dense1 = Linear(self.latent_space_dim, 1)
-        self.dense2 = Linear(self.latent_space_dim, 4)
+        self.dense2 = Linear(self.latent_space_dim, 5)
 
 
         summary(self, input_size=(self.nb_obs, self.two_dims_decomp_length, self.two_dims_channel_nb))     
@@ -109,7 +109,7 @@ class TimeSeriesToStatsConv1d(Module):
         x = self.dense2(x)
         if self.active_dense :
             x = self.activ(x)
-        x = x.permute(0, 2, 1)
+        x = x.permute(0, 1, 2)
         
         return x
     
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     kwargs = {
         "nb_obs" : 3270,
         "two_dims_decomp_length" : 600,
-        "two_dims_channel_nb" : 6}
+        "two_dims_channel_nb" : 12}
 
     model = TimeSeriesToStatsConv1d( 
     **kwargs)

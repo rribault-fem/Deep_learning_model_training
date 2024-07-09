@@ -2,5 +2,5 @@ _target_: torchydra_fem.data.time_series_to_stats.time_series_to_stats.TimeToSta
 batch_size: 256
 num_workers: 20
 pin_memory: False
-reshape_length: 600 # 2399 for time series to time series
+reshape_length: 6000 # 2399 for time series to time series
 step_diff_y_x: 0 #-15 for time series to time series

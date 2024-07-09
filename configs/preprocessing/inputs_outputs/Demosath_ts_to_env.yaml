@@ -1,0 +1,15 @@
+input_variables:
+  - simu_AI_WindSpeed
+  - simu_V_ST_TrueWindDir
+  - simu_V_ST_TrueNacelleDir
+  - simu_V_MRU_Roll
+  - simu_V_MRU_Pitch
+  - simu_V_MRU_Heave
+  - simu_V_MRU_Heading
+
+output_variables:
+  - simu_hs
+  - simu_tp
+  - simu_dp
+  - simu_cur
+  - simu_cur_dir

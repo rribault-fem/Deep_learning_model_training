@@ -1,0 +1,3 @@
+_target_: torchydra_fem.data.time_series_to_stats.wavelet_resnet_hourly_stat.WaveletResnet
+reshape_length : 36000
+step_diff_y_x : 0

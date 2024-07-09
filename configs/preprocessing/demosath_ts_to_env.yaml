@@ -4,16 +4,19 @@ _target_ : torchydra_fem.Preprocessing.Preprocessing
 
 defaults :
  - _self_
- - inputs_outputs : Monabiop_ins_tension.yaml
+ - inputs_outputs : Demosath_ts_to_env.yaml
 
 
 feature_eng : 
   _target_ : torchydra_fem.preprocessing.feature_eng.FeatureEng      
   sin_cos_method: get_cos_sin_from_angle           # Name of the method to use for the feature engineering (cf.py file) : current option available
   angles :                                           # Environmental direction dictionary
-    - roll
-    - pitch
-    - yaw
+    - simu_V_MRU_Roll
+    - simu_V_MRU_Pitch
+    - simu_V_MRU_Heading
+    - simu_V_ST_TrueNacelleDir
+    - simu_V_ST_TrueWindDir
+
 split_transform : 
   _target_ : torchydra_fem.preprocessing.split_transform.Split_transform 
   test_nb : 50                                          # Number of test samples and clusters
@@ -21,15 +24,14 @@ split_transform :
   split_method : find_test_set_in_model_validity_domain # Name of the method to use for the split (cf.py file) : current option available
   cut_low_frequency: 0.02857142857                      # Reduced frequency range for training. If PCA not performed, nb of frequency shall be a 2**x
   envir_bin :                                           # Environment variables used to pre-define the validity domain of the model
-    hs: 2
-    tp: 2
-    dp: 45
-    mag10: 2
-    theta10: 45
-  train_set_start_date : '2023-06-01 00'
-  train_set_end_date : '2023-06-20 12'
-  val_set_start_date : '2023-06-20 13'
-  val_set_end_date : '2023-06-30 20'
+    simu_hs: 1
+    simu_tp: 2
+    simu_dp: 45
+    simu_cur: 10
+  train_set_start_date : '2023-04-12 00'
+  train_set_end_date : '2024-05-20 23'
+  val_set_start_date : '2023-12-04 00'
+  val_set_end_date : '2024-04-11 23'
 input_scaler:                                             # Environmental direction dictionary
   _target_: torchydra_fem.preprocessing.scaler.Scaler_2D                   # The target class that will be instanciated thanks to hydra
   scaler_option : MinMaxScaler 
@@ -37,7 +39,7 @@ perform_decomp : False                                      # If true, perform P
 decomp_y_spectrum :
   _target_ : torchydra_fem.preprocessing.decomp_y_spectrum.Decomp_y_spectrum
   decomp_option : PCA                                     # name of the method to use for the decomposition (cf.py file) : current option available PCA or ICA
-  decomp_n_component : 24
+  decomp_n_component : 48
 output_scaler :
   _target_ : torchydra_fem.preprocessing.scaler.Scaler_1D
   donot_scale : False                                      # If true, do not scale the output

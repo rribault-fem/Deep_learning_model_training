@@ -64,10 +64,17 @@ class WaveletResnet(SurrogateDataModule):
                 
                 # x_train, y_train = self._shift_reshape_data(x_train, y_train)
                 x_train = self._calculate_wavelet(x_train)
+                self.shape_x = np.shape(x_train)
+                x_train = torch.Tensor(x_train)
+                x_train = x_train.permute(0, 3, 1, 2)
+                y_train = torch.Tensor(y_train)
                 self.data_train = TensorDataset(x_train, y_train)
 
                 # x_test, y_test = self._shift_reshape_data(x_test, y_test)
                 x_test = self._calculate_wavelet(x_test)
+                x_test = torch.Tensor(x_test)
+                x_test = x_test.permute(0, 3, 1, 2)
+                y_test = torch.Tensor(y_test)
                 self.data_val = TensorDataset(x_test, y_test)
 
                 self.data_test = ConcatDataset(datasets=[self.data_train, self.data_val])

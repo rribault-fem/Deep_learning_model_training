@@ -36,6 +36,8 @@ def main(cfg :  DictConfig):
         Returns:
         None
         """
+
+        # load environment variables foir logger name
         load_env_file(f"{hydra.utils.get_original_cwd()}/env.yaml")
         os.environ['logger_name'] = cfg.task_name
         log = logging.getLogger(os.environ['logger_name'])

@@ -42,7 +42,7 @@ class FeatureEng:
         return df
     
     def get_cos_sin_from_angle(self, angles:List[str], df:xr.Dataset):
-
+        new_variables = []
         log = logging.getLogger(os.environ['logger_name'])
         log.info('###')
         log.info(f'get cos and sin decomposition of the data {angles}')
@@ -51,8 +51,9 @@ class FeatureEng:
             df_cos = self.get_xr_dataset_time_time_sensor(angle+'_cos', df[angle]*np.cos(2*np.pi*df[angle].values/365), f'cos of {angle} values', df.time.values)
             df_sin = self.get_xr_dataset_time_time_sensor(angle+'_sin', df[angle]*np.sin(2*np.pi*df[angle].values/365), f'sin of {angle} values', df.time.values)
             df = xr.merge([df, df_cos, df_sin], compat = 'no_conflicts')
+            new_variables += [angle+'_cos', angle+'_sin']
 
-        return df
+        return df, new_variables
 
     def get_xr_dataset_time(self, array_name : str, array_values : np.array, description : str , time_values : np.array, dims : str = 'time') :
         

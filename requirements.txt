@@ -8,7 +8,7 @@ pytorch_lightning==2.0.0
 PyYAML==6.0
 rich==13.3.5
 scikit_learn==1.2.2
-scipy==1.7.3
+scipy
 torch==2.0.0
 torchinfo==1.7.2
 torchmetrics==0.11.4

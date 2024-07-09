@@ -1,0 +1,50 @@
+# config.yaml file for hydra
+# This is the default config file for hydra
+# It is used to configure the training and testing of the model and the dataset
+
+_target_: torchydra_fem.Preprocessing.Preprocessing
+
+defaults:
+  - _self_
+  - preprocessing: demosath_ts_to_env.yaml
+  - paths: demosath.yaml
+  - model : surrogate_module.yaml
+  - model_net : time_series_to_stats/Resnet.yaml
+  - trainer: cpu.yaml
+  - callbacks : default.yaml
+  - logger: tensorboard.yaml
+  - data : time_series_to_stats/wavelet_resnet_hourly_stat.yaml
+  - extras: default.yaml
+  - hydra: default.yaml
+
+  # experiment configs allow for version control of specific hyperparameters
+  # e.g. best hyperparameters for given model and datamodule
+  - experiment : null
+
+  # config for hyperparameter optimization
+  - hparams_search: null
+
+task_name: "Demosath//time_series_to_env//wavelet_resnet"       # task name, determines output directory path
+
+# tags to help you identify your experiments
+# you can overwrite this in experiment configs
+# overwrite from command line with `python train.py tags="[first_tag, second_tag]"`
+tags: ["time_series_to_env"]
+
+# set False to skip model training
+train: True
+
+# evaluate on test set, using best model weights achieved during training
+# lightning chooses best weights based on the metric specified in checkpoint callback
+test: True
+
+# compile model for faster training with pytorch 2.0
+compile: False
+
+# simply provide checkpoint path to resume training
+ckpt_path: null
+
+# seed for random number generators in pytorch, numpy and python.random
+seed: null
+
+

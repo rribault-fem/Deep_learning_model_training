@@ -1,0 +1,7 @@
+_target_ : torchydra_fem.model.components.time_series_to_stats.Resnet.ResNet
+num_channels_in : 12
+num_channels_out : 5
+num_blocks : [3, 3, 3]
+c_hidden : [16, 32, 64]
+act_fn_name : "nn.ReLU"
+block_name : "ResNetBlock"

@@ -19,7 +19,7 @@ from torchydra_fem.Preprocessing import Preprocessing
 from torchydra_fem.model.surrogate_module import SurrogateModule
 
 # version_base=1.1 is used to make hydra change the current working directory to the hydra output path
-@hydra.main(config_path="../../../../configs", config_name="train time_series_to_stats.yaml", version_base="1.3")
+@hydra.main(config_path="../../../../configs", config_name="train time_series_to_stats_demosath.yaml", version_base="1.3")
 def main(cfg :  DictConfig):
         """
         This function serves as the main entry point for the script.
@@ -147,7 +147,8 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
         df = xr.open_dataset(cfg.paths.dataset)
         variable_list = preprocess.inputs_outputs.input_variables + preprocess.inputs_outputs.output_variables
         coordinate_list = list(df.coords)
-        not_drop_list = coordinate_list + variable_list
+        envir_bin_list = list(cfg.preprocessing.split_transform.envir_bin.keys())
+        not_drop_list = coordinate_list + variable_list + envir_bin_list
         
         # drop all variables not in variable_list
         df = df.drop_vars([ var for var in df.variables if var not in not_drop_list] )
@@ -162,8 +163,14 @@ def Pre_process_data(cfg: DictConfig, preprocess : Preprocessing):
                 preprocess.unit_dictionnary[var] = 'kN'
         
         angles = preprocess.feature_eng.angles
-        df = preprocess.feature_eng.get_cos_sin_from_angle(angles, df)
 
+        df, new_variables = preprocess.feature_eng.get_cos_sin_from_angle(angles, df)
+        preprocess.inputs_outputs.input_variables += new_variables
+
+        for angle in angles :
+                # drop angle from the list of input variables
+                 preprocess.inputs_outputs.input_variables.remove(angle)
+                
         ####
         # Split data into train and test sets. 
         ####

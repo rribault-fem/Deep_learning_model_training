@@ -11,4 +11,4 @@ defaults:
 preprocessing:
    perform_decomp : False
    
-tags: ["surrogate", "conv1d", "NoPCA"]
+tags: ["wavelet"]

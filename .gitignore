@@ -15,4 +15,5 @@ __pycache__/
 *$py.class
 /data
 /multirun
+/.venv
 

@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "args" : ["model=", "data=ins2tens_time_series.yaml"],
+            "args" : ["config_name= monabiop_wavelet.yaml"],
             "console": "integratedTerminal",
             "justMyCode": true
         }

@@ -130,7 +130,7 @@ class Split_transform :
         X_numpy_channels_test_set = X_numpy_channels_test_set #[:, cut_low_freq_arg :  ,:] for frequency
 
         # Check the dimension of the input data
-        dimension_set = len(df_training_set[X_channel_list[0]].dims)
+        dimension_set = len(df_training_set[Y_channel_list[0]].dims)
         Y_numpy_channels_training_set = getattr(self, 'get_numpy_input_{}D_set'.format(str(dimension_set)))(df_training_set, Y_channel_list)
         Y_numpy_channels_test_set = getattr(self, 'get_numpy_input_{}D_set'.format(str(dimension_set)))(df_test_set, Y_channel_list)
     
